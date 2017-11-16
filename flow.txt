@@ -1,0 +1,11 @@
+GET / (w/ token cookie)
+if !user {
+  GET /user -> response
+  if response.user {
+    show DashboardPage
+    GET data
+  } else {
+    show LoginPage
+    POST /login or /register -> response & set token cookie
+  }
+}
