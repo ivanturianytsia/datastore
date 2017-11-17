@@ -1,0 +1,25 @@
+# Golang CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-go/ for more details
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.8
+        environment:
+          APPNAME: datastore
+    working_directory: /go/src/github.com/ivanturianytsia/datastore
+    steps:
+      - run: checkout
+      - run: cd client
+      - run: yarn run build
+      - run: cd ..
+      - run: go get -v -d -t ./app
+      - run: go test --cover -v ./app/...
+      - run: CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -v -o bin/${APPNAME}_alpine ./app
+      - run: docker build --tag ${APPNAME}:latest --file ./ops/Dockerfile --build-arg APPNAME=${APPNAME} .
+      - run: docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
+      - run: docker tag ${APPNAME}:latest ${DOCKER_USERNAME}/${APPNAME}:latest
+      - run: docker push ${DOCKER_USERNAME}/${APPNAME}:latest
+      - run: docker tag ${APPNAME}:latest ${DOCKER_USERNAME}/${APPNAME}:$CIRCLE_SHA1
+      - run: docker push ${DOCKER_USERNAME}/${APPNAME}:$CIRCLE_SHA1
