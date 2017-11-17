@@ -2,6 +2,10 @@ package main
 
 import (
 	"os"
+	"strconv"
+	"strings"
+	"time"
+	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -19,6 +23,27 @@ func getDistDir() string {
 		return "./client/dist"
 	}
 	return filename
+}
+
+func getTokenOptions() ([]byte, time.Duration) {
+	secret := os.Getenv("TOKEN_SECRET")
+	if secret == "" {
+		secret = "SUPER_TOEKN_SECPET"
+	}
+	expiration, err := strconv.Atoi(os.Getenv("TOKEN_EXPIRATION"))
+	if err != nil {
+		expiration = 24
+	}
+	return []byte(secret), (time.Hour * time.Duration(expiration))
+}
+
+func RemoveWhiteSpace(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, str)
 }
 
 type Hasher interface {

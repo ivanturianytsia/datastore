@@ -8,6 +8,17 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+type User struct {
+	ID        bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
+	Email     string        `bson:"email,omitempty" json:"email,omitempty"`
+	Hash      string        `bson:"hash,omitempty" json:"hash,omitempty"`
+	Roles     []string      `bson:"roles,omitempty" json:"roles,omitempty"`
+	CreatedOn time.Time     `bson:"created,omitempty" json:"created,omitempty"`
+	UpdatedOn time.Time     `bson:"updated,omitempty" json:"updated,omitempty"`
+	Activated bool          `bson:"activated,omitempty" json:"activated,omitempty"`
+	OldHashes []string      `bson:"oldhashes,omitempty" json:"oldhashes,omitempty"`
+}
+
 type UserStore interface {
 	Create(email, password string) (User, error)
 	ReadById(id string) (User, error)
@@ -141,17 +152,6 @@ func (store *mongoUserStore) CheckPassword(id, password string) error {
 		return err
 	}
 	return store.hasher.Check(password, user.Hash)
-}
-
-type User struct {
-	ID        bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
-	Email     string        `bson:"email,omitempty" json:"email,omitempty"`
-	Hash      string        `bson:"hash,omitempty" json:"hash,omitempty"`
-	Roles     []string      `bson:"roles,omitempty" json:"roles,omitempty"`
-	CreatedOn time.Time     `bson:"created,omitempty" json:"created,omitempty"`
-	UpdatedOn time.Time     `bson:"updated,omitempty" json:"updated,omitempty"`
-	Activated bool          `bson:"activated,omitempty" json:"activated,omitempty"`
-	OldHashes []string      `bson:"oldhashes,omitempty" json:"oldhashes,omitempty"`
 }
 
 func NewUpdates() UserUpdates {

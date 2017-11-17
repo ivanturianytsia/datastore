@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 
 	"github.com/gorilla/mux"
 )
@@ -14,7 +15,7 @@ var index []byte
 
 func init() {
 	var err error
-	index, err = ioutil.ReadFile("./client/index.html")
+	index, err = ioutil.ReadFile(path.Join(getDistDir(), "index.html"))
 	if err != nil {
 		log.Fatalln(err)
 		return
@@ -22,7 +23,7 @@ func init() {
 }
 
 type Server struct {
-	auth UserService
+	auth AuthService
 	user UserStore
 }
 
@@ -31,32 +32,35 @@ func NewServer() (*Server, error) {
 	if err := db.Connect(os.Getenv("DB")); err != nil {
 		return nil, err
 	}
-	userstore, err := NewUserStore(db)
+	user, err := NewUserStore(db)
 	if err != nil {
 		return nil, err
 	}
-	auth := NewUserService(userstore)
+	auth := NewAuthService(user)
 	return &Server{
 		auth: auth,
-		user: userstore,
+		user: user,
 	}, nil
 }
 
 func (s Server) Route(router *mux.Router) {
 	router.Methods("GET").Path("/").HandlerFunc(s.handlePage)
 	router.Methods("GET").Path("/data").HandlerFunc(s.handleData)
+	router.Methods("GET").Path("/auth/user").HandlerFunc(s.handleUser)
 	router.Methods("POST").Path("/auth/login").HandlerFunc(s.handleLogin)
 	router.Methods("POST").Path("/auth/register").HandlerFunc(s.handleRegister)
 
 	router.PathPrefix("/static/").Handler(
-		http.StripPrefix("/static/",
-			http.FileServer(
-				http.Dir(getDistDir()))))
+		http.FileServer(
+			http.Dir(path.Join(getDistDir()))))
 }
 
 type Credentials struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+type TokenBody struct {
+	Token string `json:"token"`
 }
 
 func (s Server) handlePage(w http.ResponseWriter, r *http.Request) {
@@ -83,13 +87,12 @@ func (s Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Invalid password"))
 		return
 	}
-	user, err := s.auth.LogIn(cred.Email, cred.Password)
+	token, err := s.auth.LogIn(cred.Email, cred.Password)
 	if err != nil {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
-
-	Respond(w, r, http.StatusOK, user)
+	Respond(w, r, http.StatusOK, TokenBody{token})
 }
 
 func (s Server) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -106,11 +109,19 @@ func (s Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Invalid password"))
 		return
 	}
-	user, err := s.auth.Register(cred.Email, cred.Password)
+	token, err := s.auth.Register(cred.Email, cred.Password)
 	if err != nil {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
+	Respond(w, r, http.StatusOK, TokenBody{token})
+}
 
+func (s Server) handleUser(w http.ResponseWriter, r *http.Request) {
+	user, err := s.auth.UserFromRequest(r)
+	if err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+		return
+	}
 	Respond(w, r, http.StatusOK, user)
 }
