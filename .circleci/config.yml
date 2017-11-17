@@ -12,9 +12,11 @@ jobs:
     steps:
       - checkout
       - run: cd client
-      - run: curl -o- -L https://yarnpkg.com/install.sh | bash
-      - run: yarn
-      - run: yarn run build
+      # - run: curl -o- -L https://yarnpkg.com/install.sh | bash
+      - run: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+      - run: sudo apt-get install -y nodejs
+      - run: npm install
+      - run: npm run build
       - run: cd ..
       - run: go get -v -d -t ./app
       - run: go test --cover -v ./app/...
