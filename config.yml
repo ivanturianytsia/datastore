@@ -10,7 +10,7 @@ jobs:
           APPNAME: datastore
     working_directory: /go/src/github.com/ivanturianytsia/datastore
     steps:
-      - run: checkout
+      - checkout
       - run: cd client
       - run: yarn run build
       - run: cd ..
