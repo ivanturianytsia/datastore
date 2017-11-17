@@ -17,6 +17,6 @@ WORKDIR ${PARENT_DIR}
 
 ADD ./bin/${APPNAME}_alpine $EXE
 ADD ./app ${PARENT_DIR}/app
-RUN ./client/dist ${PARENT_DIR}/client/dist
+ADD ./client/dist ${PARENT_DIR}/client/dist
 
 ENTRYPOINT $EXE
