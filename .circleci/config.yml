@@ -11,13 +11,15 @@ jobs:
     working_directory: /go/src/github.com/ivanturianytsia/datastore
     steps:
       - checkout
-      - run: cd client
-      # - run: curl -o- -L https://yarnpkg.com/install.sh | bash
       - run: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
       - run: sudo apt-get install -y nodejs
-      - run: npm install
-      - run: npm run build
-      - run: cd ..
+      # - run: curl -o- -L https://yarnpkg.com/install.sh | bash
+      - run:
+          command: npm install
+          working_directory: /go/src/github.com/ivanturianytsia/datastore/client
+      - run:
+          command: npm run build
+          working_directory: /go/src/github.com/ivanturianytsia/datastore/client
       - run: go get -v -d -t ./app
       - run: go test --cover -v ./app/...
       - run: CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -v -o bin/${APPNAME}_alpine ./app
