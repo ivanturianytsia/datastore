@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -11,24 +10,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var index []byte
-
-func init() {
-	var err error
-	index, err = ioutil.ReadFile(path.Join(getDistDir(), "index.html"))
-	if err != nil {
-		log.Fatalln(err)
-		return
-	}
-}
-
 type Server struct {
-	auth AuthService
-	user UserStore
+	auth  AuthService
+	user  UserStore
+	index []byte
 }
 
 func NewServer() (*Server, error) {
-	db := NewDatabase("agh-thesis")
+	db := NewDatabase("agh-datastore")
 	if err := db.Connect(os.Getenv("DB")); err != nil {
 		return nil, err
 	}
@@ -37,9 +26,14 @@ func NewServer() (*Server, error) {
 		return nil, err
 	}
 	auth := NewAuthService(user)
+	index, err := ioutil.ReadFile(path.Join(getDistDir(), "index.html"))
+	if err != nil {
+		return nil, err
+	}
 	return &Server{
-		auth: auth,
-		user: user,
+		auth:  auth,
+		user:  user,
+		index: index,
 	}, nil
 }
 
@@ -65,7 +59,7 @@ type TokenBody struct {
 
 func (s Server) handlePage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write(index)
+	w.Write(s.index)
 }
 
 func (s Server) handleData(w http.ResponseWriter, r *http.Request) {

@@ -73,9 +73,9 @@ func (s *authService) Register(email, password string) (string, error) {
 }
 
 func (s *authService) TokenFromRequest(r *http.Request) (string, error) {
-	authHeader := r.Header.Get("Authentication")
+	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		return "", fmt.Errorf("No access token in Cookie or Header.")
+		return "", fmt.Errorf("No access token in Header.")
 	}
 	return RemoveWhiteSpace(strings.TrimLeft(authHeader, "Bearer")), nil
 }

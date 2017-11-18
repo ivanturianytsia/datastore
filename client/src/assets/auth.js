@@ -37,7 +37,7 @@ class Auth {
     }
     return this.ctx.$http.get('/auth/user', {
       headers: {
-        'Authentication': 'Bearer ' + this.token
+        'Authorization': 'Bearer ' + this.token
       }
     })
     .then(response => {
