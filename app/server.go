@@ -9,7 +9,6 @@ import (
 	"path"
 
 	"github.com/gorilla/mux"
-	"github.com/ivanturianytsia/nomi-micros/utils"
 )
 
 type Server struct {
@@ -136,7 +135,7 @@ func (s Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(32 << 20)
 	file, handler, err := r.FormFile("file")
 	if err != nil {
-		utils.RespondErr(w, r, http.StatusBadRequest, err)
+		RespondErr(w, r, http.StatusBadRequest, err)
 		return
 	}
 	defer file.Close()
@@ -144,15 +143,15 @@ func (s Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	filename := path.Join(getDataDir(), user.ID.Hex(), handler.Filename)
 	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		utils.RespondErr(w, r, http.StatusInternalServerError, err)
+		RespondErr(w, r, http.StatusInternalServerError, err)
 		return
 	}
 	defer f.Close()
 	if _, err := io.Copy(f, file); err != nil {
-		utils.RespondErr(w, r, http.StatusInternalServerError, err)
+		RespondErr(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	utils.Respond(w, r, http.StatusOK, []string{handler.Filename})
+	Respond(w, r, http.StatusOK, []string{handler.Filename})
 }
 func (s Server) handleGetFiles(w http.ResponseWriter, r *http.Request) {
 	user, err := s.auth.UserFromRequest(r)
@@ -176,7 +175,7 @@ func (s Server) handleGetFiles(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
-	utils.Respond(w, r, http.StatusOK, filelist)
+	Respond(w, r, http.StatusOK, filelist)
 }
 func (s Server) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
@@ -188,12 +187,12 @@ func (s Server) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	filename := path.Join(getDataDir(), user.ID.Hex(), mux.Vars(r)["filename"])
 	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		utils.RespondErr(w, r, http.StatusInternalServerError, err)
+		RespondErr(w, r, http.StatusInternalServerError, err)
 		return
 	}
 	defer f.Close()
 	if _, err := io.Copy(w, f); err != nil {
-		utils.RespondErr(w, r, http.StatusInternalServerError, err)
+		RespondErr(w, r, http.StatusInternalServerError, err)
 		return
 	}
 }
