@@ -10,6 +10,7 @@ ENV PARENT_DIR="/go/src/github.com/ivanturianytsia/"${APPNAME}
 ENV EXE="${PARENT_DIR}/${APPNAME}"
 
 RUN mkdir -p ${PARENT_DIR}
+RUN mkdir -p ${PARENT_DIR}/data/
 RUN mkdir -p ${PARENT_DIR}/client/dist/
 
 WORKDIR ${PARENT_DIR}

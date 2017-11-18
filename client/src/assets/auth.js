@@ -1,3 +1,5 @@
+const domain = ''
+
 class Auth {
   constructor (ctx) {
     this.ctx = ctx
@@ -26,16 +28,16 @@ class Auth {
     })
   }
   Login (email, password) {
-    return this.post('/auth/login', email, password)
+    return this.post(domain + '/auth/login', email, password)
   }
   Register (email, password) {
-    return this.post('/auth/register', email, password)
+    return this.post(domain + '/auth/register', email, password)
   }
   GetUser () {
     if (this.token === '') {
       throw new Error('No token provided')
     }
-    return this.ctx.$http.get('/auth/user', {
+    return this.ctx.$http.get(domain + '/auth/user', {
       headers: {
         'Authorization': 'Bearer ' + this.token
       }

@@ -20,8 +20,8 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-
 	server.Route(router)
 
+	log.Printf("Listening on port %s", getPort())
 	http.ListenAndServe(getPort(), router)
 }

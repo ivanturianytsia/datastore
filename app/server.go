@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 
 	"github.com/gorilla/mux"
+	"github.com/ivanturianytsia/nomi-micros/utils"
 )
 
 type Server struct {
@@ -44,9 +46,14 @@ func (s Server) Route(router *mux.Router) {
 	router.Methods("POST").Path("/auth/login").HandlerFunc(s.handleLogin)
 	router.Methods("POST").Path("/auth/register").HandlerFunc(s.handleRegister)
 
+	router.Methods("POST").Path("/upload").HandlerFunc(s.handleUpload)
+	router.Methods("GET").PathPrefix("/files").HandlerFunc(s.handleGetFiles)
+	router.Methods("GET").PathPrefix("/files/:filename").HandlerFunc(s.handleGetFile)
+
 	router.PathPrefix("/static/").Handler(
 		http.FileServer(
 			http.Dir(path.Join(getDistDir()))))
+
 }
 
 type Credentials struct {
@@ -118,4 +125,75 @@ func (s Server) handleUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Respond(w, r, http.StatusOK, user)
+}
+
+func (s Server) handleUpload(w http.ResponseWriter, r *http.Request) {
+	user, err := s.auth.UserFromRequest(r)
+	if err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+		return
+	}
+	r.ParseMultipartForm(32 << 20)
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		utils.RespondErr(w, r, http.StatusBadRequest, err)
+		return
+	}
+	defer file.Close()
+
+	filename := path.Join(getDataDir(), user.ID.Hex(), handler.Filename)
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		utils.RespondErr(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	defer f.Close()
+	if _, err := io.Copy(f, file); err != nil {
+		utils.RespondErr(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	utils.Respond(w, r, http.StatusOK, []string{handler.Filename})
+}
+func (s Server) handleGetFiles(w http.ResponseWriter, r *http.Request) {
+	user, err := s.auth.UserFromRequest(r)
+	if err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+		return
+	}
+	dir := path.Join(getDataDir(), user.ID.Hex())
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		RespondErr(w, r, http.StatusBadRequest, err)
+		return
+	}
+	filelist := []map[string]interface{}{}
+	for _, v := range files {
+		if !v.IsDir() {
+			filelist = append(filelist, map[string]interface{}{
+				"name":     v.Name(),
+				"modified": v.ModTime(),
+				"size":     v.Size(),
+			})
+		}
+	}
+	utils.Respond(w, r, http.StatusOK, filelist)
+}
+func (s Server) handleGetFile(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	user, err := s.auth.UserForToken(token)
+	if err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+		return
+	}
+	filename := path.Join(getDataDir(), user.ID.Hex(), mux.Vars(r)["filename"])
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		utils.RespondErr(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	defer f.Close()
+	if _, err := io.Copy(w, f); err != nil {
+		utils.RespondErr(w, r, http.StatusInternalServerError, err)
+		return
+	}
 }

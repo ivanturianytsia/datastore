@@ -78,7 +78,7 @@ func Test_CreateUser(t *testing.T) {
 	tUserData.id = user.ID
 }
 
-func Test_ReadByEmailAndCheckPassword(t *testing.T) {
+func Test_ReadUserByEmailAndCheckPassword(t *testing.T) {
 	user, err := tUserData.store.ReadByEmail(tUserData.email)
 	if err != nil {
 		t.Error(err)
@@ -93,7 +93,7 @@ func Test_ReadByEmailAndCheckPassword(t *testing.T) {
 		return
 	}
 }
-func Test_Update(t *testing.T) {
+func Test_UpdateUser(t *testing.T) {
 	user, err := tUserData.store.Update(tUserData.id.Hex(), NewUpdates().Password(tUserData.newSecret))
 	if err != nil {
 		t.Error(err)
@@ -105,7 +105,7 @@ func Test_Update(t *testing.T) {
 	}
 }
 
-func Test_Delete(t *testing.T) {
+func Test_DeleteUser(t *testing.T) {
 	if err := tUserData.store.Delete(tUserData.id.Hex()); err != nil {
 		t.Error(err)
 		return
@@ -118,7 +118,7 @@ func Test_Delete(t *testing.T) {
 
 // Service
 
-func Test_UserRegister(t *testing.T) {
+func Test_AuthRegister(t *testing.T) {
 	token, err := tAuthData.service.Register(tAuthData.email, tAuthData.secret)
 	if err != nil {
 		t.Error(err)
@@ -130,13 +130,13 @@ func Test_UserRegister(t *testing.T) {
 	}
 	tAuthData.token = token
 }
-func Test_UserDoubleRegister(t *testing.T) {
+func Test_AuthDoubleRegister(t *testing.T) {
 	if _, err := tAuthData.service.Register(tAuthData.email, tAuthData.secret); err == nil {
 		t.Error("Should not register same email")
 		return
 	}
 }
-func Test_UserLogIn(t *testing.T) {
+func Test_AuthLogIn(t *testing.T) {
 	token, err := tAuthData.service.LogIn(tAuthData.email, tAuthData.secret)
 	if err != nil {
 		t.Error(err)
@@ -147,13 +147,13 @@ func Test_UserLogIn(t *testing.T) {
 		return
 	}
 }
-func Test_UserBadLogIn(t *testing.T) {
+func Test_AuthBadLogIn(t *testing.T) {
 	if _, err := tAuthData.service.LogIn(tAuthData.email, tAuthData.badSecret); err == nil {
 		t.Errorf("Should not log in with invalid password")
 		return
 	}
 }
-func Test_UserForToken(t *testing.T) {
+func Test_AuthUserForToken(t *testing.T) {
 	user, err := tAuthData.service.UserForToken(tAuthData.token)
 	if err != nil {
 		t.Error(err)
@@ -169,7 +169,7 @@ func Test_UserForToken(t *testing.T) {
 	}
 }
 
-func Test_TokenFromRequest(t *testing.T) {
+func Test_AuthTokenFromRequest(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Error(err)

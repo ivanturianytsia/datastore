@@ -24,6 +24,13 @@ func getDistDir() string {
 	}
 	return filename
 }
+func getDataDir() string {
+	filename := os.Getenv("DATA_DIR")
+	if filename == "" {
+		return "./data"
+	}
+	return filename
+}
 
 func getTokenOptions() ([]byte, time.Duration) {
 	secret := os.Getenv("TOKEN_SECRET")
