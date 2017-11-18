@@ -12,7 +12,7 @@ export TOKEN_EXPIRATION="72"
 export ENV="prod"
 export PORT="3000"
 export STATIC_DIR="./client/dist"
-export DB="mongodb://ivan:ivan@cluster0-shard-00-00-p1nri.mongodb.net:27017,cluster0-shard-00-01-p1nri.mongodb.net:27017,cluster0-shard-00-02-p1nri.mongodb.net:27017/agh?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin"
+export DB="mongo"
 
 
 function start {
@@ -75,11 +75,7 @@ function build {
         --label traefik.frontend.rule=Host:${DOMAIN} \
         --network ${TRAEFIK_NETWORK} \
         --env DB=$DB \
-        --env DATA_DIR=$DATA_DIR \
         --env DIST_DIR=$DIST_DIR \
-        --env CLIENT_ID=$CLIENT_ID \
-        --env CLIENT_SECRET=$CLIENT_SECRET \
-        --env REDIRECT_URI=$REDIRECT_URI \
         $REGISTRY/${APPNAME}:$HASH"
       ;;
     service_create)

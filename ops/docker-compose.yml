@@ -1,0 +1,26 @@
+---
+version: '3'
+
+services:
+  mongo:
+    image: "library/mongo:latest"
+    networks:
+      - backend
+  datastore:
+    image: "ivanturianytsia/datastore:latest"
+    environment:
+      - DB=mongo
+      - PORT=3000
+      - TOKEN_SECRET=THSIISaSedoCkercrettokprodenSecRet
+      - TOKEN_EXPIRATION=72
+      - ENV=prod
+      - STATIC_DIR=./client/dist
+    ports:
+      - "3000:3000"
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: overlay
+    external: false
