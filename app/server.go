@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -12,9 +13,10 @@ import (
 )
 
 type Server struct {
-	auth  AuthService
-	user  UserStore
-	index []byte
+	auth         AuthService
+	user         UserStore
+	passwordless PasswordlessRequestStore
+	index        []byte
 }
 
 func NewServer() (*Server, error) {
@@ -27,14 +29,19 @@ func NewServer() (*Server, error) {
 		return nil, err
 	}
 	auth := NewAuthService(user)
+	passwordless, err := NewPasswordlessRequestStore(db)
+	if err != nil {
+		return nil, err
+	}
 	index, err := ioutil.ReadFile(path.Join(getDistDir(), "index.html"))
 	if err != nil {
 		return nil, err
 	}
 	return &Server{
-		auth:  auth,
-		user:  user,
-		index: index,
+		auth:         auth,
+		user:         user,
+		index:        index,
+		passwordless: passwordless,
 	}, nil
 }
 
@@ -44,6 +51,7 @@ func (s Server) Route(router *mux.Router) {
 	router.Methods("GET").Path("/auth/user").HandlerFunc(s.handleUser)
 	router.Methods("POST").Path("/auth/login").HandlerFunc(s.handleLogin)
 	router.Methods("POST").Path("/auth/register").HandlerFunc(s.handleRegister)
+	router.Methods("POST").Path("/auth/code").HandlerFunc(s.handleCode)
 
 	router.Methods("POST").Path("/upload").HandlerFunc(s.handleUpload)
 	router.Methods("GET").Path("/files").HandlerFunc(s.handleGetFiles)
@@ -59,6 +67,10 @@ func (s Server) Route(router *mux.Router) {
 type Credentials struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+type PasswordlessBody struct {
+	Email string `json:"email"`
+	Code  string `json:"code"`
 }
 type TokenBody struct {
 	Token string `json:"token"`
@@ -88,12 +100,17 @@ func (s Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Invalid password"))
 		return
 	}
-	token, err := s.auth.LogIn(cred.Email, cred.Password)
+	user, err := s.auth.LogIn(cred.Email, cred.Password)
 	if err != nil {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
-	Respond(w, r, http.StatusOK, TokenBody{token})
+	request, err := s.passwordless.Add(user.ID.Hex())
+	if err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+	}
+	log.Println(request.Code) // TODO: SEND EMAIL
+	Respond(w, r, http.StatusOK, map[string]string{"email": user.Email})
 }
 
 func (s Server) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +127,43 @@ func (s Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Invalid password"))
 		return
 	}
-	token, err := s.auth.Register(cred.Email, cred.Password)
+	user, err := s.auth.Register(cred.Email, cred.Password)
+	if err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+		return
+	}
+	request, err := s.passwordless.Add(user.ID.Hex())
+	if err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+	}
+	log.Println(request.Code) // TODO: SEND EMAIL
+	Respond(w, r, http.StatusOK, map[string]string{"email": user.Email})
+}
+
+func (s Server) handleCode(w http.ResponseWriter, r *http.Request) {
+	var body PasswordlessBody
+	if err := DecodeBody(r, &body); err != nil {
+		RespondErr(w, r, http.StatusBadRequest, err)
+		return
+	}
+	if body.Email == "" {
+		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Invalid email"))
+		return
+	}
+	if body.Code == "" {
+		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Invalid code"))
+		return
+	}
+	user, err := s.user.ReadByEmail(body.Email)
+	if err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+		return
+	}
+	if err := s.passwordless.Verify(body.Code, user.ID.Hex()); err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+		return
+	}
+	token, err := s.auth.UserIdToToken(user.ID)
 	if err != nil {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return

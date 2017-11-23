@@ -4,6 +4,7 @@ import LoginPage from '@/components/LoginPage'
 import RegisterPage from '@/components/RegisterPage'
 import HomePage from '@/components/HomePage'
 import UploadPage from '@/components/UploadPage'
+import CodePage from '@/components/CodePage'
 
 Vue.use(Router)
 
@@ -23,6 +24,10 @@ export default new Router({
   {
     path: '/upload',
     component: UploadPage
+  },
+  {
+    path: '/code',
+    component: CodePage
   },
   { path: '*', redirect: '/home' }]
 })

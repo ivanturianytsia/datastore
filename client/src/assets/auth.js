@@ -11,10 +11,35 @@ class Auth {
     if (password === '') {
       throw new Error('No password provided')
     }
-    const that = this
     return this.ctx.$http.post(url, {
       email,
       password
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }).then(response => {
+      let obj = JSON.parse(response.body)
+      return obj
+    })
+  }
+  Login (email, password) {
+    return this.post(domain + '/auth/login', email, password)
+  }
+  Register (email, password) {
+    return this.post(domain + '/auth/register', email, password)
+  }
+  PostEmailCode (email, code) {
+    if (email === '') {
+      throw new Error('No email provided')
+    }
+    if (code === '') {
+      throw new Error('No code provided')
+    }
+    const that = this
+    return this.ctx.$http.post('/auth/code', {
+      email,
+      code
     }, {
       headers: {
         'Content-Type': 'application/json'
@@ -26,12 +51,6 @@ class Auth {
       }
       return obj
     })
-  }
-  Login (email, password) {
-    return this.post(domain + '/auth/login', email, password)
-  }
-  Register (email, password) {
-    return this.post(domain + '/auth/register', email, password)
   }
   GetUser () {
     if (this.token === '') {

@@ -28,20 +28,21 @@ type UserStore interface {
 	CheckPassword(password, hash string) error
 }
 
-var collection = "users"
-
 type mongoUserStore struct {
-	db     *Database
-	hasher Hasher
+	db         *Database
+	hasher     Hasher
+	collection string
 }
 
 func NewUserStore(db *Database) (UserStore, error) {
+	var collection = "users"
 	if err := db.EnsureUnique(collection, []string{"email"}); err != nil {
 		return nil, err
 	}
 	return &mongoUserStore{
-		db:     db,
-		hasher: NewBCryptHasher(),
+		db:         db,
+		hasher:     NewBCryptHasher(),
+		collection: collection,
 	}, nil
 }
 
@@ -65,7 +66,7 @@ func (store *mongoUserStore) Create(email, password string) (User, error) {
 		CreatedOn: time.Now(),
 	}
 
-	if err := store.db.WithCollection(collection, func(c *mgo.Collection) error {
+	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
 		return c.Insert(newUser)
 	}); err != nil {
 		return User{}, err
@@ -80,7 +81,7 @@ func (store *mongoUserStore) ReadById(id string) (User, error) {
 	}
 
 	var user User
-	if err := store.db.WithCollection(collection, func(c *mgo.Collection) error {
+	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
 		return c.FindId(bson.ObjectIdHex(id)).One(&user)
 	}); err != nil {
 		return User{}, err
@@ -95,7 +96,7 @@ func (store *mongoUserStore) ReadByEmail(email string) (User, error) {
 	}
 
 	var user User
-	if err := store.db.WithCollection(collection, func(c *mgo.Collection) error {
+	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
 		return c.Find(bson.M{"email": email}).One(&user)
 	}); err != nil {
 		return User{}, err
@@ -125,7 +126,7 @@ func (store *mongoUserStore) Update(id string, updates UserUpdates) (User, error
 	}
 
 	var user User
-	if err := store.db.WithCollection(collection, func(c *mgo.Collection) error {
+	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
 		if err := c.UpdateId(bson.ObjectIdHex(id), bson.M{"$set": updates}); err != nil {
 			return err
 		}
@@ -141,7 +142,7 @@ func (store *mongoUserStore) Delete(id string) error {
 	if !bson.IsObjectIdHex(id) {
 		return fmt.Errorf("Id '%s' is invalid", id)
 	}
-	return store.db.WithCollection(collection, func(c *mgo.Collection) error {
+	return store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
 		return c.RemoveId(bson.ObjectIdHex(id))
 	})
 }

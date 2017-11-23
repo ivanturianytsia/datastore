@@ -20,7 +20,9 @@ export default {
 
       auth.Register(data.email, data.password)
         .then(response => {
-          this.$router.push('/home')
+          this.$router.push({
+            path: '/code', query: { email: response.email }
+          })
         })
         .catch(err => {
           console.log(err)

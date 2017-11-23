@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"gopkg.in/mgo.v2/bson"
 )
 
 type AuthService interface {
-	LogIn(email, password string) (string, error)
-	Register(email, password string) (string, error)
+	LogIn(email, password string) (User, error)
+	Register(email, password string) (User, error)
+	UserIdToToken(userId bson.ObjectId) (string, error)
+
 	TokenFromRequest(r *http.Request) (string, error)
 	UserForToken(token string) (User, error)
 	UserFromRequest(r *http.Request) (User, error)
@@ -27,49 +31,43 @@ func NewAuthService(userStore UserStore) AuthService {
 	}
 }
 
-func (s *authService) LogIn(email, password string) (string, error) {
+func (s *authService) LogIn(email, password string) (User, error) {
 	if email == "" {
-		return "", fmt.Errorf("Email '%s' is not valid", email)
+		return User{}, fmt.Errorf("Email '%s' is not valid", email)
 	}
 	if password == "" {
-		return "", fmt.Errorf("Password is not valid", password)
+		return User{}, fmt.Errorf("Password is not valid", password)
 	}
 	user, err := s.store.ReadByEmail(email)
 	if err != nil {
-		return "", err
+		return User{}, err
 	}
 	if user.ID == "" {
-		return "", fmt.Errorf("No user found")
+		return User{}, fmt.Errorf("No user found")
 	}
 	if err := s.store.CheckPassword(user.ID.Hex(), password); err != nil {
-		return "", err
+		return User{}, err
 	}
-	token, err := s.token.Issue(map[string]string{
-		"id": user.ID.Hex(),
-	})
-	if err != nil {
-		return "", err
-	}
-	return token, nil
+	return user, nil
 }
-func (s *authService) Register(email, password string) (string, error) {
+func (s *authService) Register(email, password string) (User, error) {
 	if email == "" {
-		return "", fmt.Errorf("Email '%s' is not valid", email)
+		return User{}, fmt.Errorf("Email '%s' is not valid", email)
 	}
 	if password == "" {
-		return "", fmt.Errorf("Password is not valid", password)
+		return User{}, fmt.Errorf("Password is not valid", password)
 	}
 	user, err := s.store.Create(email, password)
 	if err != nil {
-		return "", err
+		return User{}, err
 	}
-	token, err := s.token.Issue(map[string]string{
-		"id": user.ID.Hex(),
+	return user, nil
+}
+
+func (s *authService) UserIdToToken(userId bson.ObjectId) (string, error) {
+	return s.token.Issue(map[string]string{
+		"id": userId.Hex(),
 	})
-	if err != nil {
-		return "", err
-	}
-	return token, nil
 }
 
 func (s *authService) TokenFromRequest(r *http.Request) (string, error) {

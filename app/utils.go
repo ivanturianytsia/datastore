@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -9,6 +10,10 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 func getPort() string {
 	port := os.Getenv("PORT")
@@ -74,4 +79,12 @@ func (h BCryptHasher) Hash(password string) (string, error) {
 
 func (h BCryptHasher) Check(password string, hash string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+}
+
+func genCode(n int) string {
+	var result = ""
+	for i := 0; i < n; i++ {
+		result += strconv.Itoa(rand.Intn(10))
+	}
+	return result
 }
