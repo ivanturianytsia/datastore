@@ -16,32 +16,45 @@ jobs:
         name: Verify Docker Works
         command: |
           docker --version
-      - name: Prepare to install Node.js
+      - type: shell
+        name: Prepare to install Node.js
         command: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-      - name: Install Node.js
+      - type: shell
+        name: Install Node.js
         command: sudo apt-get install -y nodejs
       # - run: curl -o- -L https://yarnpkg.com/install.sh | bash
-      - name: Install front-end packages
+      - type: shell
+        name: Install front-end packages
         command: npm install
         working_directory: /go/src/github.com/ivanturianytsia/datastore/client
-      - name: Build front-end
+      - type: shell
+        name: Build front-end
         command: npm run build
         working_directory: /go/src/github.com/ivanturianytsia/datastore/client
-      - name: Install Go packages
+      - type: shell
+        name: Install Go packages
         command: go get -v -d -t ./app
-      - name: Test back-end
+      - type: shell
+        name: Test back-end
         command: go test --cover -v ./app/...
-      - name: Build back-end
+      - type: shell
+        name: Build back-end
         command: CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -v -o bin/${APPNAME}_alpine ./app
-      - name: Build docker image
+      - type: shell
+        name: Build docker image
         command: docker build --tag ${APPNAME}:latest --file ./ops/Dockerfile --build-arg APPNAME=${APPNAME} .
-      - name: Login into DockerHub
+      - type: shell
+        name: Login into DockerHub
         command: docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
-      - name: Tag docker image :latest
+      - type: shell
+        name: Tag docker image :latest
         command: docker tag ${APPNAME}:latest ${DOCKER_USERNAME}/${APPNAME}:latest
-      - name: Push docker image :latest
+      - type: shell
+        name: Push docker image :latest
         command: docker push ${DOCKER_USERNAME}/${APPNAME}:latest
-      - name: Build docker image :hash
+      - type: shell
+        name: Build docker image :hash
         command: docker tag ${APPNAME}:latest ${DOCKER_USERNAME}/${APPNAME}:$CIRCLE_SHA1
-      - name: Push docker image :hash
+      - type: shell
+        name: Push docker image :hash
         command: docker push ${DOCKER_USERNAME}/${APPNAME}:$CIRCLE_SHA1
