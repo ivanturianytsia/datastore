@@ -46,8 +46,8 @@ func (s Server) Route(router *mux.Router) {
 	router.Methods("POST").Path("/auth/register").HandlerFunc(s.handleRegister)
 
 	router.Methods("POST").Path("/upload").HandlerFunc(s.handleUpload)
-	router.Methods("GET").PathPrefix("/files").HandlerFunc(s.handleGetFiles)
-	router.Methods("GET").PathPrefix("/files/:filename").HandlerFunc(s.handleGetFile)
+	router.Methods("GET").Path("/files").HandlerFunc(s.handleGetFiles)
+	router.Methods("GET").Path("/files/{filename}").HandlerFunc(s.handleGetFile)
 
 	router.PathPrefix("/static/").Handler(
 		http.FileServer(
@@ -185,7 +185,7 @@ func (s Server) handleGetFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	filename := path.Join(getDataDir(), user.ID.Hex(), mux.Vars(r)["filename"])
-	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.Open(filename)
 	if err != nil {
 		RespondErr(w, r, http.StatusInternalServerError, err)
 		return

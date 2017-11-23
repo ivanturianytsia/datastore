@@ -8,6 +8,13 @@
       :data="files"
       style="width: 100%">
       <el-table-column
+      label=""
+      width="40">
+      <template slot-scope="scope">
+        <i class="fa fa-file-o"></i>
+      </template>
+      </el-table-column>
+      <el-table-column
         prop="name"
         label="Name">
       </el-table-column>
@@ -22,6 +29,13 @@
         label="Modified"
         width="180">
       </el-table-column>
+      <el-table-column
+      label="Operations">
+      <template slot-scope="scope">
+        <el-button @click="handleDownload(scope.$index, scope.row)" type="text" size="small">Download</el-button>
+        <el-button @click="handleDelete(scope.$index, scope.row)" type="text" size="small">Delete</el-button>
+      </template>
+    </el-table-column>
     </el-table>
   </div>
 </template>
@@ -39,7 +53,11 @@ export default {
   data () {
     return {
       email: '',
-      files: []
+      files: [{
+        name: 'hi',
+        size: 0,
+        modified: 0
+      }]
     }
   },
   mounted () {
@@ -80,6 +98,13 @@ export default {
     },
     toUpload () {
       this.$router.push('/upload')
+    },
+    handleDownload (index, row) {
+      window.open(`/files/${row.name}?token=${auth.token}`)
+    },
+    handleDelete (index, row) {
+      console.log(index)
+      console.log(row)
     }
   }
 }
