@@ -103,8 +103,11 @@ export default {
       window.open(`/files/${row.name}?token=${auth.token}`)
     },
     handleDelete (index, row) {
-      console.log(index)
-      console.log(row)
+      const that = this
+      files.DeleteFile(row.name)
+        .then(() => {
+          that.getFiles()
+        })
     }
   }
 }

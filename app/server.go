@@ -48,6 +48,7 @@ func (s Server) Route(router *mux.Router) {
 	router.Methods("POST").Path("/upload").HandlerFunc(s.handleUpload)
 	router.Methods("GET").Path("/files").HandlerFunc(s.handleGetFiles)
 	router.Methods("GET").Path("/files/{filename}").HandlerFunc(s.handleGetFile)
+	router.Methods("DELETE").Path("/files/{filename}").HandlerFunc(s.handleDeleteFile)
 
 	router.PathPrefix("/static/").Handler(
 		http.FileServer(
@@ -195,4 +196,17 @@ func (s Server) handleGetFile(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusInternalServerError, err)
 		return
 	}
+}
+func (s Server) handleDeleteFile(w http.ResponseWriter, r *http.Request) {
+	user, err := s.auth.UserFromRequest(r)
+	if err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+		return
+	}
+	filename := path.Join(getDataDir(), user.ID.Hex(), mux.Vars(r)["filename"])
+	if err := os.Remove(filename); err != nil {
+		RespondErr(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	Respond(w, r, http.StatusNoContent, nil)
 }

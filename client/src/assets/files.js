@@ -17,6 +17,16 @@ class Files {
       return JSON.parse(response.body)
     })
   }
+  DeleteFile (filename) {
+    if (this.token === '') {
+      throw new Error('No token provided')
+    }
+    return this.ctx.$http.delete(`${domain}/files/${filename}`, {
+      headers: {
+        'Authorization': 'Bearer ' + this.token
+      }
+    })
+  }
   get token () {
     return localStorage.token
   }
