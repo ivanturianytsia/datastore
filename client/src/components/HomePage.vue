@@ -2,7 +2,7 @@
   <div class="page">
     <h1>Welcome home {{ email }}</h1>
     <el-button @click="logout">Log Out</el-button>
-    <el-button @click="handleSelectFile">Upload</el-button>
+    <el-button @click="handleSelectFile" :loading="uploadLoading">Upload</el-button>
 
     <el-table
       :data="files"
@@ -21,6 +21,7 @@
       </el-table-column>
       <el-table-column
         prop="size"
+        :formatter="bytesToSize"
         label="Size"
         width="180">
       </el-table-column>
@@ -56,7 +57,8 @@ export default {
   data () {
     return {
       email: '',
-      files: []
+      files: [],
+      uploadLoading: false
     }
   },
   mounted () {
@@ -78,7 +80,6 @@ export default {
       that.files = response
     })
     .catch(this.handleErr)
-
   },
   methods: {
     logout () {
@@ -87,6 +88,18 @@ export default {
     },
     since (r, c, val) {
       return moment(new Date(val)).fromNow()
+    },
+    bytesToSize (r, c, val) {
+      const bytes = val
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+      if (bytes === 0) {
+        return 'n/a'
+      }
+      const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)), 10)
+      if (i === 0) {
+        return `${bytes} ${sizes[i]}`
+      }
+      return `${(bytes / (1024 ** i)).toFixed(1)} ${sizes[i]}`
     },
     handleSelectFile (event) {
       this.$refs.fileinput.click()
@@ -99,11 +112,13 @@ export default {
       const that = this
       const data = this.$refs.fileinput.files
       if (data && data.length) {
+        this.uploadLoading = true
         files.UploadFiles(data)
         .then(() => {
           return files.GetFiles()
         })
         .then(response => {
+          this.uploadLoading = false
           that.files = response
         })
         .catch(this.handleErr)
