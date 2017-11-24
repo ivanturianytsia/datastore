@@ -2,11 +2,12 @@
   <div class="page">
     <h1>Welcome home {{ email }}</h1>
     <el-button @click="logout">Log Out</el-button>
-    <el-button @click="toUpload">Upload</el-button>
+    <el-button @click="handleSelectFile">Upload</el-button>
 
     <el-table
       :data="files"
-      style="width: 100%">
+      style="width: 100%"
+      empty-text="You have no files yet">
       <el-table-column
       label=""
       width="40">
@@ -30,13 +31,15 @@
         width="180">
       </el-table-column>
       <el-table-column
-      label="Operations">
-      <template slot-scope="scope">
-        <el-button @click="handleDownload(scope.$index, scope.row)" type="text" size="small">Download</el-button>
-        <el-button @click="handleDelete(scope.$index, scope.row)" type="text" size="small">Delete</el-button>
-      </template>
-    </el-table-column>
+        label="Operations">
+        <template slot-scope="scope">
+          <el-button @click="handleDownload(scope.$index, scope.row)" type="text" size="small">Download</el-button>
+          <el-button @click="handleDelete(scope.$index, scope.row)" type="text" size="small">Delete</el-button>
+        </template>
+      </el-table-column>
     </el-table>
+
+    <input id="fileinput" type='file' @change="upload" ref="fileinput" multiple/>
   </div>
 </template>
 
@@ -53,51 +56,58 @@ export default {
   data () {
     return {
       email: '',
-      files: [{
-        name: 'hi',
-        size: 0,
-        modified: 0
-      }]
+      files: []
     }
   },
   mounted () {
     files = new Files(this)
     auth = new Auth(this)
     if (!auth.IsLogged()) {
-      this.$router.push('/login')
+      this.logout()
       return
     }
-    this.getUser()
-    this.getFiles()
+
+    const that = this
+
+    auth.GetUser()
+    .then(response => {
+      that.email = response.email
+      return files.GetFiles()
+    })
+    .then(response => {
+      that.files = response
+    })
+    .catch(this.handleErr)
+
   },
   methods: {
     logout () {
       auth.Logout()
       this.$router.push('/login')
     },
-    getUser () {
-      const that = this
-      auth.GetUser()
-        .then(response => {
-          that.email = response.email
-        })
-        .catch(err => {
-          console.log(err)
-          this.$router.push('/login')
-        })
-    },
-    getFiles () {
-      const that = this
-      files.GetFiles()
-        .then(response => {
-          that.files = response
-        })
-    },
     since (r, c, val) {
       return moment(new Date(val)).fromNow()
     },
-    toUpload () {
-      this.$router.push('/upload')
+    handleSelectFile (event) {
+      this.$refs.fileinput.click()
+    },
+    handleErr (err) {
+      console.log(err)
+      this.logout()
+    },
+    upload (event) {
+      const that = this
+      const data = this.$refs.fileinput.files
+      if (data && data.length) {
+        files.UploadFiles(data)
+        .then(() => {
+          return files.GetFiles()
+        })
+        .then(response => {
+          that.files = response
+        })
+        .catch(this.handleErr)
+      }
     },
     handleDownload (index, row) {
       window.open(`/files/${row.name}?token=${auth.token}`)
@@ -105,13 +115,25 @@ export default {
     handleDelete (index, row) {
       const that = this
       files.DeleteFile(row.name)
-        .then(() => {
-          that.getFiles()
-        })
+      .then(() => {
+        return files.GetFiles()
+      })
+      .then(response => {
+        that.files = response
+      })
+      .catch(this.handleErr)
     }
   }
 }
 </script>
 
 <style lang="css">
+#fileinput {
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -1;
+}
 </style>

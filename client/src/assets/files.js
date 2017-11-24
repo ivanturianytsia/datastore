@@ -27,6 +27,24 @@ class Files {
       }
     })
   }
+  UploadFiles (files) {
+    if (this.token === '') {
+      throw new Error('No token provided')
+    }
+
+    var data = new FormData()
+    data.append('file', files[0])
+
+    return this.ctx.$http.post(`${domain}/upload`, data, {
+      headers: {
+        'Authorization': 'Bearer ' + this.token,
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    .then(response => {
+      return JSON.parse(response.body)
+    })
+  }
   get token () {
     return localStorage.token
   }

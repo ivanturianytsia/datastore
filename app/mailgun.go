@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	mailgun "github.com/mailgun/mailgun-go"
 )
@@ -19,10 +18,8 @@ func sendCode(to, code string) error {
 		to,
 	)
 
-	resp, id, err := mg.Send(message)
-	if err != nil {
+	if _, _, err := mg.Send(message); err != nil {
 		return err
 	}
-	log.Printf("Auth code message sent to %s!\nID: %s\nResponse: %s\n", to, id, resp)
 	return nil
 }
