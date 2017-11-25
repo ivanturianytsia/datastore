@@ -27,6 +27,18 @@ class Files {
       }
     })
   }
+  UpdateFile (fileid, allowedids) {
+    if (this.token === '') {
+      throw new Error('No token provided')
+    }
+    return this.ctx.$http.put(`${domain}/file/${fileid}`, {
+      allowedids
+    }, {
+      headers: {
+        'Authorization': 'Bearer ' + this.token
+      }
+    })
+  }
   UploadFiles (files) {
     if (this.token === '') {
       throw new Error('No token provided')

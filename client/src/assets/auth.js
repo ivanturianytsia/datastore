@@ -65,6 +65,19 @@ class Auth {
       return JSON.parse(response.body)
     })
   }
+  GetUsersByEmail (email) {
+    if (this.token === '') {
+      throw new Error('No token provided')
+    }
+    return this.ctx.$http.get(`${domain}/users?email=${email}`, {
+      headers: {
+        'Authorization': 'Bearer ' + this.token
+      }
+    })
+    .then(response => {
+      return JSON.parse(response.body)
+    })
+  }
   Logout () {
     this.token = ''
   }

@@ -37,7 +37,6 @@ function build {
     mac)
       STEPNAME="Building macOS binary"
       COMMAND="go get -v -d -t ./app && \
-        go test --cover -v ./app/... && \
         go build -v -o bin/${APPNAME}_mac ./app"
       ;;
     alpine)

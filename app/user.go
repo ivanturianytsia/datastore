@@ -22,6 +22,7 @@ type User struct {
 type UserStore interface {
 	Create(email, password string) (User, error)
 	ReadById(id string) (User, error)
+	SearchByEmail(email string) ([]User, error)
 	ReadByEmail(email string) (User, error)
 	Update(id string, updates UserUpdates) (User, error)
 	Delete(id string) error
@@ -88,6 +89,16 @@ func (store *mongoUserStore) ReadById(id string) (User, error) {
 	}
 
 	return user, nil
+}
+func (store *mongoUserStore) SearchByEmail(email string) ([]User, error) {
+	var users []User
+	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
+		return c.Find(nil).Select(bson.M{"_id": 1, "email": 1}).All(&users)
+	}); err != nil {
+		return []User{}, err
+	}
+
+	return users, nil
 }
 
 func (store *mongoUserStore) ReadByEmail(email string) (User, error) {

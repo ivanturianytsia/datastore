@@ -1,52 +1,64 @@
 <template lang="html">
-  <div class="page">
-    <h1>Welcome home {{ email }}</h1>
-    <el-button @click="logout">Log Out</el-button>
+  <div>
     <el-button @click="handleSelectFile" :loading="uploadLoading">Upload</el-button>
+    <el-button class="float-right" @click="logout">Log Out from {{ email }}</el-button>
+    <el-menu :default-active="activeFilesTab" mode="horizontal" @select="handleTabSelect">
+      <el-menu-item index="files">My Files</el-menu-item>
+      <el-menu-item index="shared">Shared</el-menu-item>
+    </el-menu>
 
-    <el-table
-      :data="files"
-      style="width: 100%"
-      empty-text="You have no files yet">
-      <el-table-column
-      label=""
-      width="40">
-      <template slot-scope="scope">
-        <i class="fa fa-file-o"></i>
-      </template>
-      </el-table-column>
-      <el-table-column
-        prop="name"
-        label="Name">
-      </el-table-column>
-      <el-table-column
-        prop="size"
-        :formatter="bytesToSize"
-        label="Size"
-        width="180">
-      </el-table-column>
-      <el-table-column
-        prop="modified"
-        :formatter="since"
-        label="Modified"
-        width="180">
-      </el-table-column>
-      <el-table-column
-        label="Operations">
+    <div class="page">
+      <el-table
+        :data="filesInTab"
+        style="width: 100%"
+        empty-text="You have no files yet">
+        <el-table-column
+        label=""
+        width="40">
         <template slot-scope="scope">
-          <el-button @click="handleDownload(scope.$index, scope.row)" type="text" size="small">Download</el-button>
-          <el-button @click="handleDelete(scope.$index, scope.row)" type="text" size="small">Delete</el-button>
+          <i class="fa fa-file-o"></i>
         </template>
-      </el-table-column>
-    </el-table>
+        </el-table-column>
+        <el-table-column
+          prop="filename"
+          label="Name">
+        </el-table-column>
+        <el-table-column
+          prop="size"
+          :formatter="bytesToSize"
+          label="Size"
+          width="180">
+        </el-table-column>
+        <el-table-column
+          prop="created"
+          :formatter="since"
+          label="Created"
+          width="180">
+        </el-table-column>
+        <el-table-column
+          label="Operations">
+          <template slot-scope="scope">
+            <el-button @click="handleDownload(scope.$index, scope.row)" type="text" size="small">Download</el-button>
+            <el-button @click="handleDelete(scope.$index, scope.row)" type="text" size="small">Delete</el-button>
+            <el-button @click="handleShare(scope.$index, scope.row)" type="text" size="small">Share</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <input id="fileinput" type='file' @change="upload" ref="fileinput" multiple/>
-  </div>
+      <input id="fileinput" type='file' @change="upload" ref="fileinput" multiple/>
+    </div> <!--page-->
+
+    <div :class="{'hidden': !share.id}">
+      <share-list :file-id="share.id" :default-ids="share.default"></share-list>
+    </div>
+
+  </div>  <!--template-->
 </template>
 
 <script>
-import Auth from '../assets/auth.js'
-import Files from '../assets/files.js'
+import ShareList from './ShareList'
+import Auth from '../assets/auth'
+import Files from '../assets/files'
 import moment from 'moment'
 
 let auth
@@ -57,8 +69,12 @@ export default {
   data () {
     return {
       email: '',
+      id: '',
+      activeFilesTab: 'files',
       files: [],
-      uploadLoading: false
+      shared: [],
+      uploadLoading: false,
+      share: {}
     }
   },
   mounted () {
@@ -69,22 +85,31 @@ export default {
       return
     }
 
-    const that = this
-
     auth.GetUser()
     .then(response => {
-      that.email = response.email
+      this.email = response.email
+      this.id = response.id
       return files.GetFiles()
     })
-    .then(response => {
-      that.files = response
-    })
+    .then(this.handleFiles)
     .catch(this.handleErr)
+  },
+  computed: {
+    filesInTab () {
+      if (this.activeFilesTab === 'shared') {
+        return this.shared
+      } else {
+        return this.files
+      }
+    }
   },
   methods: {
     logout () {
       auth.Logout()
       this.$router.push('/login')
+    },
+    handleTabSelect (tab) {
+      this.activeFilesTab = tab
     },
     since (r, c, val) {
       return moment(new Date(val)).fromNow()
@@ -104,12 +129,15 @@ export default {
     handleSelectFile (event) {
       this.$refs.fileinput.click()
     },
+    handleFiles (response) {
+      this.files = response.files
+      this.shared = response.shared
+    },
     handleErr (err) {
       console.log(err)
-      this.logout()
+      // this.logout()
     },
     upload (event) {
-      const that = this
       const data = this.$refs.fileinput.files
       if (data && data.length) {
         this.uploadLoading = true
@@ -119,25 +147,30 @@ export default {
         })
         .then(response => {
           this.uploadLoading = false
-          that.files = response
+          this.handleFiles(response)
         })
         .catch(this.handleErr)
       }
     },
     handleDownload (index, row) {
-      window.open(`/files/${row.name}?token=${auth.token}`)
+      window.open(`/files/${this.id}/${row.filename}?token=${auth.token}`)
     },
     handleDelete (index, row) {
-      const that = this
-      files.DeleteFile(row.name)
+      files.DeleteFile(row.filename)
       .then(() => {
         return files.GetFiles()
       })
-      .then(response => {
-        that.files = response
-      })
+      .then(this.handleFiles)
       .catch(this.handleErr)
+    },
+    handleShare (index, row) {
+      this.share.id = row.id
+      this.share.default = row.allowedids
+      console.log(this.share)
     }
+  },
+  components: {
+    ShareList
   }
 }
 </script>
@@ -150,5 +183,11 @@ export default {
   overflow: hidden;
   position: absolute;
   z-index: -1;
+}
+.float-right {
+  float: right;
+}
+.hidden {
+  display: none;
 }
 </style>

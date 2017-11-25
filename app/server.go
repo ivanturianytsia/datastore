@@ -13,6 +13,7 @@ type Server struct {
 	auth         AuthService
 	user         UserStore
 	passwordless PasswordlessRequestStore
+	files        FileStore
 	index        []byte
 }
 
@@ -30,6 +31,10 @@ func NewServer() (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	files, err := NewFileStore(db)
+	if err != nil {
+		return nil, err
+	}
 	index, err := ioutil.ReadFile(path.Join(getDistDir(), "index.html"))
 	if err != nil {
 		return nil, err
@@ -37,6 +42,7 @@ func NewServer() (*Server, error) {
 	return &Server{
 		auth:         auth,
 		user:         user,
+		files:        files,
 		index:        index,
 		passwordless: passwordless,
 	}, nil
@@ -49,9 +55,12 @@ func (s Server) Route(router *mux.Router) {
 	router.Methods("POST").Path("/auth/register").HandlerFunc(s.handleRegister)
 	router.Methods("POST").Path("/auth/code").HandlerFunc(s.handleCode)
 
+	router.Methods("GET").Path("/users").HandlerFunc(s.handleGetUsers)
+
 	router.Methods("POST").Path("/upload").HandlerFunc(s.handleUpload)
 	router.Methods("GET").Path("/files").HandlerFunc(s.handleGetFiles)
-	router.Methods("GET").Path("/files/{filename}").HandlerFunc(s.handleGetFile)
+	router.Methods("PUT").Path("/file/{fileid}").HandlerFunc(s.handleFileUpdate)
+	router.Methods("GET").Path("/files/{ownerid}/{filename}").HandlerFunc(s.handleGetFile)
 	router.Methods("DELETE").Path("/files/{filename}").HandlerFunc(s.handleDeleteFile)
 
 	router.PathPrefix("/static/").Handler(
@@ -61,6 +70,9 @@ func (s Server) Route(router *mux.Router) {
 }
 
 func (s Server) handlePage(w http.ResponseWriter, r *http.Request) {
+	// TODO: remove
+	s.index, _ = ioutil.ReadFile(path.Join(getDistDir(), "index.html"))
+
 	w.WriteHeader(http.StatusOK)
 	w.Write(s.index)
 }

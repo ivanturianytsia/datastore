@@ -18,6 +18,7 @@ import (
 type File struct {
 	Id         bson.ObjectId       `bson:"_id,omitempty" json:"id,omitempty"`
 	Filename   string              `bson:"filename,omitempty" json:"filename,omitempty"`
+	Size       int64               `bson:"size,omitempty" json:"size,omitempty"`
 	OwnerId    bson.ObjectId       `bson:"ownerid,omitempty" json:"ownerid,omitempty"`
 	Path       string              `bson:"path,omitempty" json:"path,omitempty"`
 	AllowedIds map[string]struct{} `bson:"allowedids" json:"allowedids"`
@@ -26,9 +27,9 @@ type File struct {
 }
 
 type FileStore interface {
-	Create(filename, ownerId string) (File, error)
-	AddAlowedIdById(id, userId string) (File, error)
-	RemoveAlowedIdById(id, userId string) (File, error)
+	Create(filename, ownerId string, size int64) (File, error)
+	DeleteByPath(path string) error
+	UpdateById(id string, allowedIds map[string]struct{}) (File, error)
 	GetById(id string) (File, error)
 	GetByPath(path string) (File, error)
 	GetByOwnerId(ownerId string) ([]File, error)
@@ -51,7 +52,7 @@ func NewFileStore(db *Database) (FileStore, error) {
 	}, nil
 }
 
-func (store *fileStore) Create(filename, ownerId string) (File, error) {
+func (store *fileStore) Create(filename, ownerId string, size int64) (File, error) {
 	if !bson.IsObjectIdHex(ownerId) {
 		return File{}, fmt.Errorf("Owner id '%s' is invalid", ownerId)
 	}
@@ -59,6 +60,7 @@ func (store *fileStore) Create(filename, ownerId string) (File, error) {
 	file := File{
 		Id:         bson.NewObjectId(),
 		Filename:   filename,
+		Size:       size,
 		OwnerId:    bson.ObjectIdHex(ownerId),
 		Path:       fmt.Sprintf("%s/%s", ownerId, filename),
 		AllowedIds: map[string]struct{}{},
@@ -72,34 +74,15 @@ func (store *fileStore) Create(filename, ownerId string) (File, error) {
 	}
 	return file, nil
 }
-func (store *fileStore) AddAlowedIdById(id, userId string) (File, error) {
-	if !bson.IsObjectIdHex(id) {
-		return File{}, fmt.Errorf("File id '%s' is invalid", id)
-	}
-	if !bson.IsObjectIdHex(userId) {
-		return File{}, fmt.Errorf("User id '%s' is invalid", userId)
-	}
-	var file File
-	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
-		return c.FindId(bson.ObjectIdHex(id)).One(&file)
-	}); err != nil {
-		return File{}, err
-	}
-	file.AllowedIds[userId] = struct{}{}
-	file.UpdatedOn = time.Now()
-	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
-		return c.UpdateId(bson.ObjectIdHex(id), bson.M{"$set": file})
-	}); err != nil {
-		return File{}, err
-	}
-	return file, nil
+
+func (store *fileStore) DeleteByPath(path string) error {
+	return store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
+		return c.Remove(bson.M{"path": path})
+	})
 }
-func (store *fileStore) RemoveAlowedIdById(id, userId string) (File, error) {
+func (store *fileStore) UpdateById(id string, allowedIds map[string]struct{}) (File, error) {
 	if !bson.IsObjectIdHex(id) {
 		return File{}, fmt.Errorf("File id '%s' is invalid", id)
-	}
-	if !bson.IsObjectIdHex(userId) {
-		return File{}, fmt.Errorf("User id '%s' is invalid", userId)
 	}
 	var file File
 	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
@@ -107,7 +90,7 @@ func (store *fileStore) RemoveAlowedIdById(id, userId string) (File, error) {
 	}); err != nil {
 		return File{}, err
 	}
-	delete(file.AllowedIds, userId)
+	file.AllowedIds = allowedIds
 	file.UpdatedOn = time.Now()
 	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
 		return c.UpdateId(bson.ObjectIdHex(id), bson.M{"$set": file})

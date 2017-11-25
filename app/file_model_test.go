@@ -21,7 +21,7 @@ var tFile = struct {
 }
 
 func Test_Create(t *testing.T) {
-	file, err := tFile.store.Create(tFile.filename, tFile.ownerId.Hex())
+	file, err := tFile.store.Create(tFile.filename, tFile.ownerId.Hex(), 5)
 	if err != nil {
 		t.Error(err)
 		return
@@ -46,7 +46,9 @@ func Test_Create(t *testing.T) {
 	tFile.fileId = file.Id
 }
 func Test_AddAlowedIdById(t *testing.T) {
-	file, err := tFile.store.AddAlowedIdById(tFile.fileId.Hex(), tFile.userId.Hex())
+	allowedIds := map[string]struct{}{}
+	allowedIds[tFile.userId.Hex()] = struct{}{}
+	file, err := tFile.store.UpdateById(tFile.fileId.Hex(), allowedIds)
 	if err != nil {
 		t.Error(err)
 		return
@@ -69,7 +71,8 @@ func Test_GetByAllowedIdGood(t *testing.T) {
 	}
 }
 func Test_RemoveAlowedIdById(t *testing.T) {
-	file, err := tFile.store.RemoveAlowedIdById(tFile.fileId.Hex(), tFile.userId.Hex())
+	allowedIds := map[string]struct{}{}
+	file, err := tFile.store.UpdateById(tFile.fileId.Hex(), allowedIds)
 	if err != nil {
 		t.Error(err)
 		return
