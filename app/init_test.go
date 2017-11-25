@@ -34,4 +34,9 @@ func init() {
 		panic(err)
 		return
 	}
+
+	if tFile.store, err = NewFileStore(db); err != nil {
+		panic(err)
+		return
+	}
 }
