@@ -123,7 +123,8 @@ func (s Server) handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) handleFileUpdate(w http.ResponseWriter, r *http.Request) {
-	if _, err := s.auth.UserFromRequest(r); err != nil {
+	user, err := s.auth.UserFromRequest(r)
+	if err != nil {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
@@ -132,6 +133,15 @@ func (s Server) handleFileUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := DecodeBody(r, &body); err != nil {
 		RespondErr(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	oldFile, err := s.files.GetById(mux.Vars(r)["fileid"])
+	if err != nil {
+		RespondErr(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	if oldFile.OwnerId.Hex() != user.ID.Hex() {
+		RespondErr(w, r, http.StatusForbidden, fmt.Errorf("You have no permission to edit this file"))
 		return
 	}
 	file, err := s.files.UpdateById(mux.Vars(r)["fileid"], body.AllowedIds)
