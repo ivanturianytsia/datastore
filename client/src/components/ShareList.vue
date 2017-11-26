@@ -1,6 +1,15 @@
 <template lang="html">
-  <el-checkbox v-for="user in users" v-model="selected[user.id]" :label="user.email" border></el-checkbox>
-  <el-button @click="handleSave">Save</el-button>
+  <el-card  class="box-card">
+    <div slot="header" class="clearfix">
+      <span>Share "<b>{{filename}}</b>"</span>
+      <el-button style="float: right; padding: 3px 10px" type="text" @click="handleCancel">Cancel</el-button>
+      <el-button style="float: right; padding: 3px 10px" type="text" @click="handleSave">Save</el-button>
+    </div>
+    <el-checkbox-group v-model="selected">
+      <el-checkbox v-for="user in users" :label="user.id" border>{{user.email}}</el-checkbox>
+    </el-checkbox-group>
+
+  </el-card>
 </template>
 
 <script>
@@ -9,11 +18,11 @@ let auth
 
 export default {
   name: 'ShareList',
-  props: ['fileId', 'defaultIds'],
+  props: ['filename'],
   data () {
     return {
-      selected: {},
-      users: []
+      users: [],
+      selected: []
     }
   },
   mounted () {
@@ -25,8 +34,14 @@ export default {
     })
   },
   methods: {
+    init (data) {
+      this.selected = data
+    },
     handleSave () {
-      console.log(this.selected)
+      this.$emit('save-shared', this.selected)
+    },
+    handleCancel () {
+      this.$emit('cancel-shared')
     }
   }
 }

@@ -39,19 +39,18 @@
           label="Operations">
           <template slot-scope="scope">
             <el-button @click="handleDownload(scope.$index, scope.row)" type="text" size="small">Download</el-button>
-            <el-button @click="handleDelete(scope.$index, scope.row)" type="text" size="small">Delete</el-button>
-            <el-button @click="handleShare(scope.$index, scope.row)" type="text" size="small">Share</el-button>
+            <el-button v-if="activeFilesTab === 'files'" @click="handleDelete(scope.$index, scope.row)" type="text" size="small">Delete</el-button>
+            <el-button v-if="activeFilesTab === 'files'" @click="handleShare(scope.$index, scope.row)" type="text" size="small">Share</el-button>
           </template>
         </el-table-column>
       </el-table>
 
+      <div class="share-modal">
+        <share-list v-show="shareId" :filename="shareFilename" @save-shared="handleSaveShared" @cancel-shared="handleCancelShared" ref="sharelist"></share-list>
+      </div>
+
       <input id="fileinput" type='file' @change="upload" ref="fileinput" multiple/>
     </div> <!--page-->
-
-    <div :class="{'hidden': !share.id}">
-      <share-list :file-id="share.id" :default-ids="share.default"></share-list>
-    </div>
-
   </div>  <!--template-->
 </template>
 
@@ -74,7 +73,8 @@ export default {
       files: [],
       shared: [],
       uploadLoading: false,
-      share: {}
+      shareId: '',
+      shareFilename: ''
     }
   },
   mounted () {
@@ -153,7 +153,7 @@ export default {
       }
     },
     handleDownload (index, row) {
-      window.open(`/files/${this.id}/${row.filename}?token=${auth.token}`)
+      window.open(`/files/${row.path}?token=${auth.token}`)
     },
     handleDelete (index, row) {
       files.DeleteFile(row.filename)
@@ -164,9 +164,35 @@ export default {
       .catch(this.handleErr)
     },
     handleShare (index, row) {
-      this.share.id = row.id
-      this.share.default = row.allowedids
-      console.log(this.share)
+      this.shareId = row.id
+      this.shareFilename = row.filename
+
+      let defaults = []
+      for (let i in row.allowedids) {
+        defaults.push(i)
+      }
+      this.$refs.sharelist.init(defaults)
+    },
+    handleSaveShared (data) {
+      let id = this.shareId
+      if (id) {
+        this.shareId = ''
+        this.shareFilename = ''
+        let allowedids = {}
+        for (let i in data) {
+          allowedids[data[i]] = {}
+        }
+        files.UpdateFile(id, allowedids)
+        .then(response => {
+          return files.GetFiles()
+        })
+        .then(this.handleFiles)
+        .catch(this.handleErr)
+      }
+    },
+    handleCancelShared () {
+      this.shareId = ''
+      this.shareFilename = ''
     }
   },
   components: {
@@ -189,5 +215,9 @@ export default {
 }
 .hidden {
   display: none;
+}
+.share-modal {
+  position: relative;
+  padding-top: 50px;
 }
 </style>
