@@ -1,15 +1,22 @@
 <template lang="html">
-  <el-card  class="box-card">
+  <el-dialog
+    :title="title"
+    :visible.sync="dialogVisible"
+    width="30%"
+    :before-close="handleCancel">
     <div slot="header" class="clearfix">
-      <span>Share "<b>{{filename}}</b>"</span>
+      <span></span>
       <el-button style="float: right; padding: 3px 10px" type="text" @click="handleCancel">Cancel</el-button>
       <el-button style="float: right; padding: 3px 10px" type="text" @click="handleSave">Save</el-button>
     </div>
     <el-checkbox-group v-model="selected">
       <el-checkbox v-for="user in users" :label="user.id" border>{{user.email}}</el-checkbox>
     </el-checkbox-group>
-
-  </el-card>
+    <span slot="footer" class="dialog-footer">
+      <el-button @click="handleCancel">Cancel</el-button>
+      <el-button type="primary" @click="handleSave">Save</el-button>
+    </span>
+  </el-dialog>
 </template>
 
 <script>
@@ -18,11 +25,13 @@ let auth
 
 export default {
   name: 'ShareList',
-  props: ['filename'],
   data () {
     return {
+      dialogVisible: false,
       users: [],
-      selected: []
+      selected: [],
+      name: '',
+      id: ''
     }
   },
   mounted () {
@@ -33,14 +42,27 @@ export default {
       this.users = response
     })
   },
+  computed: {
+    title () {
+      return `Share file "${this.name}"`
+    }
+  },
   methods: {
     init (data) {
-      this.selected = data
+      this.name = data.name
+      this.id = data.id
+      this.selected = data.selected
+      this.dialogVisible = true
     },
     handleSave () {
-      this.$emit('save-shared', this.selected)
+      this.dialogVisible = false
+      this.$emit('save-shared', {
+        id: this.id,
+        selected: this.selected
+      })
     },
     handleCancel () {
+      this.dialogVisible = false
       this.$emit('cancel-shared')
     }
   }

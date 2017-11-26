@@ -36,18 +36,24 @@
           width="180">
         </el-table-column>
         <el-table-column
-          label="Operations">
+          label=""
+          width="90">
           <template slot-scope="scope">
-            <el-button @click="handleDownload(scope.$index, scope.row)" type="text" size="small">Download</el-button>
-            <el-button v-if="activeFilesTab === 'files'" @click="handleDelete(scope.$index, scope.row)" type="text" size="small">Delete</el-button>
-            <el-button v-if="activeFilesTab === 'files'" @click="handleShare(scope.$index, scope.row)" type="text" size="small">Share</el-button>
+            <el-dropdown class="more-dropdown" @command="handleMore" trigger="click">
+              <span class="el-dropdown-link">
+                More<i class="el-icon-arrow-down el-icon--right"></i>
+              </span>
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item class="el-dropdown-item" :command="{ command: 'download', row: scope.row }">Download</el-dropdown-item>
+                <el-dropdown-item class="el-dropdown-item" :command="{ command: 'delete', row: scope.row }" v-if="activeFilesTab === 'files'">Delete</el-dropdown-item>
+                <el-dropdown-item class="el-dropdown-item" :command="{ command: 'share', row: scope.row }" v-if="activeFilesTab === 'files'">Share</el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
 
-      <div class="share-modal">
-        <share-list v-show="shareId" :filename="shareFilename" @save-shared="handleSaveShared" @cancel-shared="handleCancelShared" ref="sharelist"></share-list>
-      </div>
+      <share-list v-show="shareId" @save-shared="handleSaveShared" @cancel-shared="handleCancelShared" ref="sharelist"></share-list>
 
       <input id="fileinput" type='file' @change="upload" ref="fileinput" multiple/>
     </div> <!--page-->
@@ -72,9 +78,7 @@ export default {
       activeFilesTab: 'files',
       files: [],
       shared: [],
-      uploadLoading: false,
-      shareId: '',
-      shareFilename: ''
+      uploadLoading: false
     }
   },
   mounted () {
@@ -152,10 +156,23 @@ export default {
         .catch(this.handleErr)
       }
     },
-    handleDownload (index, row) {
+    handleMore (data) {
+      switch (data.command) {
+        case 'download':
+          this.handleDownload(data.row)
+          break
+        case 'delete':
+          this.handleDelete(data.row)
+          break
+        case 'share':
+          this.handleShare(data.row)
+          break
+      }
+    },
+    handleDownload (row) {
       window.open(`/files/${row.path}?token=${auth.token}`)
     },
-    handleDelete (index, row) {
+    handleDelete (row) {
       files.DeleteFile(row.filename)
       .then(() => {
         return files.GetFiles()
@@ -163,24 +180,23 @@ export default {
       .then(this.handleFiles)
       .catch(this.handleErr)
     },
-    handleShare (index, row) {
-      this.shareId = row.id
-      this.shareFilename = row.filename
-
+    handleShare (row) {
       let defaults = []
       for (let i in row.allowedids) {
         defaults.push(i)
       }
-      this.$refs.sharelist.init(defaults)
+      this.$refs.sharelist.init({
+        id: row.id,
+        name: row.filename,
+        selected: defaults
+      })
     },
     handleSaveShared (data) {
-      let id = this.shareId
+      let id = data.id
       if (id) {
-        this.shareId = ''
-        this.shareFilename = ''
         let allowedids = {}
-        for (let i in data) {
-          allowedids[data[i]] = {}
+        for (let i in data.selected) {
+          allowedids[data.selected[i]] = {}
         }
         files.UpdateFile(id, allowedids)
         .then(response => {
@@ -189,10 +205,6 @@ export default {
         .then(this.handleFiles)
         .catch(this.handleErr)
       }
-    },
-    handleCancelShared () {
-      this.shareId = ''
-      this.shareFilename = ''
     }
   },
   components: {
@@ -219,5 +231,18 @@ export default {
 .share-modal {
   position: relative;
   padding-top: 50px;
+}
+.more-dropdown {
+  float: right;
+}
+.el-dropdown-link {
+  cursor: pointer;
+  color: #409EFF;
+}
+.el-icon-arrow-down {
+  font-size: 12px;
+}
+.el-dropdown-item {
+  font-family: inherit;
 }
 </style>
