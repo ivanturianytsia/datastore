@@ -8,3 +8,7 @@ docker-machine create \
 eval $(docker-machine env agh-datastore)
 
 docker swarm init --advertise-addr=$(docker-machine ip agh-datastore)
+
+export MAILGUN_DOMAIN=
+export MAILGUN_KEY=
+export MAILGUN_PUBKEY=

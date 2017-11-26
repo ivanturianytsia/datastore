@@ -64,10 +64,12 @@
 import ShareList from './ShareList'
 import Auth from '../assets/auth'
 import Files from '../assets/files'
+import Utils from '../assets/utils'
 import moment from 'moment'
 
 let auth
 let files
+let utils
 
 export default {
   name: 'HomePage',
@@ -84,6 +86,7 @@ export default {
   mounted () {
     files = new Files(this)
     auth = new Auth(this)
+    utils = new Utils(this)
     if (!auth.IsLogged()) {
       this.logout()
       return
@@ -96,7 +99,9 @@ export default {
       return files.GetFiles()
     })
     .then(this.handleFiles)
-    .catch(this.handleErr)
+    .catch(err => {
+      utils.handleErr(err)
+    })
   },
   computed: {
     filesInTab () {
@@ -137,9 +142,11 @@ export default {
       this.files = response.files
       this.shared = response.shared
     },
-    handleErr (err) {
-      console.log(err)
-      // this.logout()
+    handleSucc (text) {
+      const h = this.$createElement
+      this.$message({
+        message: h('p', null, text)
+      })
     },
     upload (event) {
       const data = this.$refs.fileinput.files
@@ -152,8 +159,11 @@ export default {
         .then(response => {
           this.uploadLoading = false
           this.handleFiles(response)
+          this.handleSucc('File uploaded')
         })
-        .catch(this.handleErr)
+        .catch(err => {
+          utils.handleErr(err)
+        })
       }
     },
     handleMore (data) {
@@ -178,7 +188,9 @@ export default {
         return files.GetFiles()
       })
       .then(this.handleFiles)
-      .catch(this.handleErr)
+      .catch(err => {
+        utils.handleErr(err)
+      })
     },
     handleShare (row) {
       let defaults = []
@@ -200,10 +212,13 @@ export default {
         }
         files.UpdateFile(id, allowedids)
         .then(response => {
+          this.handleSucc('Saved')
           return files.GetFiles()
         })
         .then(this.handleFiles)
-        .catch(this.handleErr)
+        .catch(err => {
+          utils.handleErr(err)
+        })
       }
     }
   },

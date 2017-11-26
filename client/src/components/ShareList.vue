@@ -21,7 +21,10 @@
 
 <script>
 import Auth from '../assets/auth'
+import Utils from '../assets/utils'
+
 let auth
+let utils
 
 export default {
   name: 'ShareList',
@@ -36,10 +39,14 @@ export default {
   },
   mounted () {
     auth = new Auth(this)
+    utils = new Utils(this)
 
     auth.GetUsersByEmail('')
     .then(response => {
       this.users = response
+    })
+    .catch(err => {
+      utils.handleErr(err)
     })
   },
   computed: {

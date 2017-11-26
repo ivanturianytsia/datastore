@@ -15,6 +15,9 @@
 
 <script>
 import Auth from '../assets/auth.js'
+import Utils from '../assets/utils'
+
+let utils
 
 export default {
   name: 'CodePage',
@@ -22,6 +25,9 @@ export default {
     return {
       code: ''
     }
+  },
+  mounted () {
+    utils = new Utils(this)
   },
   methods: {
     goBack () {
@@ -35,7 +41,7 @@ export default {
           that.$router.push('/home')
         })
         .catch(err => {
-          console.log(err)
+          utils.handleErr(err)
         })
     }
   }

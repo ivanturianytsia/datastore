@@ -8,11 +8,17 @@
 <script>
 import CredentialsForm from './CredentialsForm'
 import Auth from '../assets/auth.js'
+import Utils from '../assets/utils'
+
+let utils
 
 export default {
   name: 'LoginPage',
   components: {
     CredentialsForm
+  },
+  mounted () {
+    utils = new Utils(this)
   },
   methods: {
     login (data) {
@@ -25,7 +31,7 @@ export default {
           })
         })
         .catch(err => {
-          console.log(err)
+          utils.handleErr(err)
         })
     },
     toRegister () {

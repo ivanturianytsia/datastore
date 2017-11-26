@@ -16,9 +16,9 @@ services:
       - ENV=prod
       - DIST_DIR=./client/dist
       - DATA_DIR=./data
-      - MAILGUN_DOMAIN=mail.nomidigital.com
-      - MAILGUN_KEY=key-a15d635d13c805e172d0dad8e56e36dd
-      - MAILGUN_PUBKEY=pubkey-f912855177a172d30bc3614b741e77a2
+      - MAILGUN_DOMAIN
+      - MAILGUN_KEY
+      - MAILGUN_PUBKEY
     ports:
       - "80:3000"
     networks:
