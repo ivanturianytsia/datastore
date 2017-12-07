@@ -16,20 +16,21 @@ import (
 // As user I want to view list of files shared with me
 
 type File struct {
-	Id         bson.ObjectId       `bson:"_id,omitempty" json:"id,omitempty"`
-	Filename   string              `bson:"filename,omitempty" json:"filename,omitempty"`
-	Size       int64               `bson:"size,omitempty" json:"size,omitempty"`
-	OwnerId    bson.ObjectId       `bson:"ownerid,omitempty" json:"ownerid,omitempty"`
-	Path       string              `bson:"path,omitempty" json:"path,omitempty"`
-	AllowedIds map[string]struct{} `bson:"allowedids" json:"allowedids"`
-	CreatedOn  time.Time           `bson:"created" json:"created"`
-	UpdatedOn  time.Time           `bson:"updated" json:"updated"`
+	Id          bson.ObjectId       `bson:"_id,omitempty" json:"id,omitempty"`
+	Filename    string              `bson:"filename,omitempty" json:"filename,omitempty"`
+	Description string              `bson:"description,omitempty" json:"description,omitempty"`
+	Size        int64               `bson:"size,omitempty" json:"size,omitempty"`
+	OwnerId     bson.ObjectId       `bson:"ownerid,omitempty" json:"ownerid,omitempty"`
+	Path        string              `bson:"path,omitempty" json:"path,omitempty"`
+	AllowedIds  map[string]struct{} `bson:"allowedids" json:"allowedids"`
+	CreatedOn   time.Time           `bson:"created" json:"created"`
+	UpdatedOn   time.Time           `bson:"updated" json:"updated"`
 }
 
 type FileStore interface {
 	Create(filename, ownerId string, size int64) (File, error)
 	DeleteByPath(path string) error
-	UpdateById(id string, allowedIds map[string]struct{}) (File, error)
+	UpdateById(id string, updates FileUpdates) (File, error)
 	GetById(id string) (File, error)
 	GetByPath(path string) (File, error)
 	GetByOwnerId(ownerId string) ([]File, error)
@@ -80,20 +81,18 @@ func (store *fileStore) DeleteByPath(path string) error {
 		return c.Remove(bson.M{"path": path})
 	})
 }
-func (store *fileStore) UpdateById(id string, allowedIds map[string]struct{}) (File, error) {
+func (store *fileStore) UpdateById(id string, updates FileUpdates) (File, error) {
 	if !bson.IsObjectIdHex(id) {
 		return File{}, fmt.Errorf("File id '%s' is invalid", id)
 	}
+	updates["updated"] = time.Now()
+
 	var file File
 	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
+		if err := c.UpdateId(bson.ObjectIdHex(id), bson.M{"$set": updates}); err != nil {
+			return err
+		}
 		return c.FindId(bson.ObjectIdHex(id)).One(&file)
-	}); err != nil {
-		return File{}, err
-	}
-	file.AllowedIds = allowedIds
-	file.UpdatedOn = time.Now()
-	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
-		return c.UpdateId(bson.ObjectIdHex(id), bson.M{"$set": file})
 	}); err != nil {
 		return File{}, err
 	}
@@ -144,4 +143,23 @@ func (store *fileStore) GetByAllowedId(userId string) ([]File, error) {
 		return []File{}, err
 	}
 	return files, nil
+}
+
+// Updates
+func NewFileUpdates() FileUpdates {
+	return FileUpdates{}
+}
+
+type FileUpdates bson.M
+
+func (updates FileUpdates) AllowedIds(allowedIds map[string]struct{}) FileUpdates {
+	updates["allowedids"] = allowedIds
+
+	return updates
+}
+
+func (updates FileUpdates) Description(description string) FileUpdates {
+	updates["description"] = description
+
+	return updates
 }

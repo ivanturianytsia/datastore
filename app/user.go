@@ -138,6 +138,8 @@ func (store *mongoUserStore) Update(id string, updates UserUpdates) (User, error
 		updates["hash"] = hash
 	}
 
+	updates["updated"] = time.Now()
+
 	var user User
 	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
 		if err := c.UpdateId(bson.ObjectIdHex(id), bson.M{"$set": updates}); err != nil {

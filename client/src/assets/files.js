@@ -27,15 +27,14 @@ class Files {
       }
     })
   }
-  UpdateFile (fileid, allowedids) {
+  UpdateFile (fileid, updates) {
     if (this.token === '') {
       throw new Error('No token provided')
     }
-    return this.ctx.$http.put(`${domain}/file/${fileid}`, {
-      allowedids
-    }, {
+    return this.ctx.$http.put(`${domain}/file/${fileid}`, updates, {
       headers: {
-        'Authorization': 'Bearer ' + this.token
+        'Authorization': 'Bearer ' + this.token,
+        'Content-Type': 'application/json'
       }
     })
   }

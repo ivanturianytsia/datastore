@@ -48,7 +48,7 @@ func Test_Create(t *testing.T) {
 func Test_AddAlowedIdById(t *testing.T) {
 	allowedIds := map[string]struct{}{}
 	allowedIds[tFile.userId.Hex()] = struct{}{}
-	file, err := tFile.store.UpdateById(tFile.fileId.Hex(), allowedIds)
+	file, err := tFile.store.UpdateById(tFile.fileId.Hex(), NewFileUpdates().AllowedIds(allowedIds))
 	if err != nil {
 		t.Error(err)
 		return
@@ -72,7 +72,7 @@ func Test_GetByAllowedIdGood(t *testing.T) {
 }
 func Test_RemoveAlowedIdById(t *testing.T) {
 	allowedIds := map[string]struct{}{}
-	file, err := tFile.store.UpdateById(tFile.fileId.Hex(), allowedIds)
+	file, err := tFile.store.UpdateById(tFile.fileId.Hex(), NewFileUpdates().AllowedIds(allowedIds))
 	if err != nil {
 		t.Error(err)
 		return

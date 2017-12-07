@@ -128,13 +128,8 @@ func (s Server) handleFileUpdate(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
-	var body struct {
-		AllowedIds map[string]struct{} `json:allowedids`
-	}
-	if err := DecodeBody(r, &body); err != nil {
-		RespondErr(w, r, http.StatusInternalServerError, err)
-		return
-	}
+
+	// Check owner
 	oldFile, err := s.files.GetById(mux.Vars(r)["fileid"])
 	if err != nil {
 		RespondErr(w, r, http.StatusInternalServerError, err)
@@ -144,10 +139,30 @@ func (s Server) handleFileUpdate(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusForbidden, fmt.Errorf("You have no permission to edit this file"))
 		return
 	}
-	file, err := s.files.UpdateById(mux.Vars(r)["fileid"], body.AllowedIds)
-	if err != nil {
-		RespondErr(w, r, http.StatusInternalServerError, err)
+
+	var body map[string]interface{}
+	if err := DecodeBody(r, &body); err != nil {
+		RespondErr(w, r, http.StatusBadRequest, err)
 		return
 	}
-	Respond(w, r, http.StatusOK, file)
+	updates := NewFileUpdates()
+	shouldUpdate := false
+	if v, ok := body["allowedids"].(map[string]interface{}); ok {
+		var allowedIds = map[string]struct{}{}
+		for i, _ := range v {
+			allowedIds[i] = struct{}{}
+		}
+		updates.AllowedIds(allowedIds)
+		shouldUpdate = true
+	}
+	if v, ok := body["description"].(string); ok {
+		updates.Description(v)
+		shouldUpdate = true
+	}
+	if !shouldUpdate {
+		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Nothing to update"))
+		return
+	}
+	updated, err := s.files.UpdateById(oldFile.Id.Hex(), updates)
+	Respond(w, r, http.StatusOK, updated)
 }

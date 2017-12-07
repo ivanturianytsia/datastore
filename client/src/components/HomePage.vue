@@ -46,15 +46,17 @@
               </span>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item class="el-dropdown-item" :command="{ command: 'download', row: scope.row }">Download</el-dropdown-item>
-                <el-dropdown-item class="el-dropdown-item" :command="{ command: 'delete', row: scope.row }" v-if="activeFilesTab === 'files'">Delete</el-dropdown-item>
+                <el-dropdown-item class="el-dropdown-item" :command="{ command: 'edit', row: scope.row }" v-if="activeFilesTab === 'files'">Edit</el-dropdown-item>
                 <el-dropdown-item class="el-dropdown-item" :command="{ command: 'share', row: scope.row }" v-if="activeFilesTab === 'files'">Share</el-dropdown-item>
+                <el-dropdown-item class="el-dropdown-item" :command="{ command: 'delete', row: scope.row }" v-if="activeFilesTab === 'files'">Delete</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
 
-      <share-list v-show="shareId" @save-shared="handleSaveShared" @cancel-shared="handleCancelShared" ref="sharelist"></share-list>
+      <share-list @save-shared="handleSaveShared" @cancel-shared="handleCancelShared" ref="sharelist"></share-list>
+      <edit-field @save="handleSaveEdit" @cancel="handleCancelEdit" ref="editfield"></edit-field>
 
       <input id="fileinput" type='file' @change="upload" ref="fileinput" multiple/>
     </div> <!--page-->
@@ -63,6 +65,7 @@
 
 <script>
 import ShareList from './ShareList'
+import EditField from './EditField'
 import Auth from '../assets/auth'
 import Files from '../assets/files'
 import Utils from '../assets/utils'
@@ -181,6 +184,9 @@ export default {
         case 'share':
           this.handleShare(data.row)
           break
+        case 'edit':
+          this.handleEdit(data.row)
+          break
       }
     },
     handleDownload (row) {
@@ -207,6 +213,13 @@ export default {
         selected: defaults
       })
     },
+    handleEdit (row) {
+      this.$refs.editfield.init({
+        id: row.id,
+        name: row.filename,
+        description: row.description
+      })
+    },
     handleSaveShared (data) {
       let id = data.id
       if (id) {
@@ -214,7 +227,9 @@ export default {
         for (let i in data.selected) {
           allowedids[data.selected[i]] = {}
         }
-        files.UpdateFile(id, allowedids)
+        files.UpdateFile(id, {
+          "allowedids": allowedids
+        })
         .then(response => {
           this.handleSucc('Saved')
           return files.GetFiles()
@@ -225,10 +240,31 @@ export default {
         })
       }
     },
+    handleCancelShared () {
+
+    },
+    handleSaveEdit (data) {
+      const id = data.id
+      if (id) {
+        files.UpdateFile(id, {
+          "description": data.description
+        })
+        .then(response => {
+          this.handleSucc('Saved')
+          return files.GetFiles()
+        })
+        .then(this.handleFiles)
+        .catch(err => {
+          utils.handleErr(err)
+        })
+      }
+    },
+    handleCancelEdit () {
+
+    },
     toggleTwoFactor () {
       auth.PutUser({ 'twofactor': !this.user.twofactor })
       .then(response => {
-        console.log(response)
         this.user = {
           ...response
         }
@@ -239,7 +275,8 @@ export default {
     }
   },
   components: {
-    ShareList
+    ShareList,
+    EditField
   }
 }
 </script>
