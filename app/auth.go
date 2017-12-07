@@ -103,7 +103,8 @@ func (s *authService) UserFromRequest(r *http.Request) (User, error) {
 		return User{}, err
 	}
 	return User{
-		ID:    user.ID,
-		Email: user.Email,
+		ID:        user.ID,
+		Email:     user.Email,
+		TwoFactor: user.TwoFactor,
 	}, err
 }

@@ -36,16 +36,30 @@ func (s Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
-	request, err := s.passwordless.Add(user.ID.Hex())
+
+	// Check if should TwoFactor
+	if user.TwoFactor {
+		// If yes - send email
+		request, err := s.passwordless.Add(user.ID.Hex())
+		if err != nil {
+			RespondErr(w, r, http.StatusForbidden, err)
+			return
+		}
+		if err := s.code.SendCode(user.Email, request.Code); err != nil {
+			RespondErr(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		Respond(w, r, http.StatusOK, map[string]string{"email": user.Email})
+		return
+	}
+	// If no - respond with token
+	token, err := s.auth.UserIdToToken(user.ID)
 	if err != nil {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
-	if err := sendCode(user.Email, request.Code); err != nil {
-		RespondErr(w, r, http.StatusInternalServerError, err)
-		return
-	}
-	Respond(w, r, http.StatusOK, map[string]string{"email": user.Email})
+	Respond(w, r, http.StatusOK, TokenBody{token})
+	return
 }
 
 func (s Server) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +86,7 @@ func (s Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
-	if err := sendCode(user.Email, request.Code); err != nil {
+	if err := s.code.SendCode(user.Email, request.Code); err != nil {
 		RespondErr(w, r, http.StatusInternalServerError, err)
 		return
 	}
@@ -108,13 +122,4 @@ func (s Server) handleCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	Respond(w, r, http.StatusOK, TokenBody{token})
-}
-
-func (s Server) handleUser(w http.ResponseWriter, r *http.Request) {
-	user, err := s.auth.UserFromRequest(r)
-	if err != nil {
-		RespondErr(w, r, http.StatusForbidden, err)
-		return
-	}
-	Respond(w, r, http.StatusOK, user)
 }

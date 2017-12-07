@@ -1,7 +1,8 @@
 <template lang="html">
   <div>
     <el-button @click="handleSelectFile" :loading="uploadLoading">Upload</el-button>
-    <el-button class="float-right" @click="logout">Log Out from {{ email }}</el-button>
+    <el-button class="float-right" @click="logout">Log Out from {{ user.email }}</el-button>
+    <el-button class="float-right" :type="user.twofactor ? '' : 'primary'" @click="toggleTwoFactor">{{ toggleTwoFactorText }}</el-button>
     <el-menu :default-active="activeFilesTab" mode="horizontal" @select="handleTabSelect">
       <el-menu-item index="files">My Files</el-menu-item>
       <el-menu-item index="shared">Shared</el-menu-item>
@@ -75,8 +76,7 @@ export default {
   name: 'HomePage',
   data () {
     return {
-      email: '',
-      id: '',
+      user: {},
       activeFilesTab: 'files',
       files: [],
       shared: [],
@@ -94,8 +94,9 @@ export default {
 
     auth.GetUser()
     .then(response => {
-      this.email = response.email
-      this.id = response.id
+      this.user = {
+        ...response
+      }
       return files.GetFiles()
     })
     .then(this.handleFiles)
@@ -110,6 +111,9 @@ export default {
       } else {
         return this.files
       }
+    },
+    toggleTwoFactorText () {
+      return `${this.user.twofactor ? 'Disable' : 'Enable'} two-factor auth`
     }
   },
   methods: {
@@ -220,6 +224,18 @@ export default {
           utils.handleErr(err)
         })
       }
+    },
+    toggleTwoFactor () {
+      auth.PutUser({ 'twofactor': !this.user.twofactor })
+      .then(response => {
+        console.log(response)
+        this.user = {
+          ...response
+        }
+      })
+      .catch(err => {
+        utils.handleErr(err)
+      })
     }
   },
   components: {

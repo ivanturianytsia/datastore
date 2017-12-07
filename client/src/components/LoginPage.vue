@@ -26,9 +26,13 @@ export default {
 
       auth.Login(data.email, data.password)
         .then(response => {
-          this.$router.push({
-            path: '/code', query: { email: response.email }
-          })
+          if (response.token) {
+            this.$router.push('/home')
+          } else {
+            this.$router.push({
+              path: '/code', query: { email: response.email }
+            })
+          }
         })
         .catch(err => {
           utils.handleErr(err)

@@ -2,15 +2,31 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	mailgun "github.com/mailgun/mailgun-go"
 )
 
-var (
-	mg mailgun.Mailgun
-)
+type CodeAuthService interface {
+	SendCode(to, code string) error
+}
 
-func sendCode(to, code string) error {
+type MailgunService struct {
+	mg mailgun.Mailgun
+}
+
+func NewMailgunService() CodeAuthService {
+	mg := mailgun.NewMailgun(
+		os.Getenv("MAILGUN_DOMAIN"),
+		os.Getenv("MAILGUN_KEY"),
+		os.Getenv("MAILGUN_PUBKEY"))
+
+	return &MailgunService{
+		mg: mg,
+	}
+}
+
+func (service *MailgunService) SendCode(to, code string) error {
 	message := mailgun.NewMessage(
 		"passwordless@mail.nomidigital.com",
 		"AGH Datastore Auth Code",
@@ -18,7 +34,7 @@ func sendCode(to, code string) error {
 		to,
 	)
 
-	if _, _, err := mg.Send(message); err != nil {
+	if _, _, err := service.mg.Send(message); err != nil {
 		return err
 	}
 	return nil

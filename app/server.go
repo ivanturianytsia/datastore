@@ -12,6 +12,7 @@ import (
 type Server struct {
 	auth         AuthService
 	user         UserStore
+	code         CodeAuthService
 	passwordless PasswordlessRequestStore
 	files        FileStore
 	index        []byte
@@ -35,6 +36,7 @@ func NewServer() (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	code := NewMailgunService()
 	index, err := ioutil.ReadFile(path.Join(getDistDir(), "index.html"))
 	if err != nil {
 		return nil, err
@@ -44,6 +46,7 @@ func NewServer() (*Server, error) {
 		user:         user,
 		files:        files,
 		index:        index,
+		code:         code,
 		passwordless: passwordless,
 	}, nil
 }
@@ -51,6 +54,7 @@ func NewServer() (*Server, error) {
 func (s Server) Route(router *mux.Router) {
 	router.Methods("GET").Path("/").HandlerFunc(s.handlePage)
 	router.Methods("GET").Path("/auth/user").HandlerFunc(s.handleUser)
+	router.Methods("PUT").Path("/user").HandlerFunc(s.handlePutUser)
 	router.Methods("POST").Path("/auth/login").HandlerFunc(s.handleLogin)
 	router.Methods("POST").Path("/auth/register").HandlerFunc(s.handleRegister)
 	router.Methods("POST").Path("/auth/code").HandlerFunc(s.handleCode)

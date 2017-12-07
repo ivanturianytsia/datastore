@@ -15,7 +15,8 @@ type User struct {
 	Roles     []string      `bson:"roles,omitempty" json:"roles,omitempty"`
 	CreatedOn time.Time     `bson:"created,omitempty" json:"created,omitempty"`
 	UpdatedOn time.Time     `bson:"updated,omitempty" json:"updated,omitempty"`
-	Activated bool          `bson:"activated,omitempty" json:"activated,omitempty"`
+	Activated bool          `bson:"activated" json:"activated"`
+	TwoFactor bool          `bson:"twofactor" json:"twofactor"`
 	OldHashes []string      `bson:"oldhashes,omitempty" json:"oldhashes,omitempty"`
 }
 
@@ -65,6 +66,7 @@ func (store *mongoUserStore) Create(email, password string) (User, error) {
 		Hash:      hash,
 		UpdatedOn: time.Now(),
 		CreatedOn: time.Now(),
+		TwoFactor: true,
 	}
 
 	if err := store.db.WithCollection(store.collection, func(c *mgo.Collection) error {
@@ -192,6 +194,12 @@ func (uu UserUpdates) Roles(roles []string) UserUpdates {
 
 func (uu UserUpdates) Activated(activated bool) UserUpdates {
 	uu["activated"] = activated
+
+	return uu
+}
+
+func (uu UserUpdates) TwoFactor(twofactor bool) UserUpdates {
+	uu["twofactor"] = twofactor
 
 	return uu
 }

@@ -20,6 +20,9 @@ class Auth {
       }
     }).then(response => {
       let obj = JSON.parse(response.body)
+      if (obj.token) {
+        this.token = obj.token
+      }
       return obj
     })
   }
@@ -59,6 +62,20 @@ class Auth {
     return this.ctx.$http.get(domain + '/auth/user', {
       headers: {
         'Authorization': 'Bearer ' + this.token
+      }
+    })
+    .then(response => {
+      return JSON.parse(response.body)
+    })
+  }
+  PutUser (updates) {
+    if (this.token === '') {
+      throw new Error('No token provided')
+    }
+    return this.ctx.$http.put(domain + '/user', updates, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json'
       }
     })
     .then(response => {
