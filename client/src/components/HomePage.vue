@@ -13,6 +13,11 @@
         :data="filesInTab"
         style="width: 100%"
         empty-text="You have no files yet">
+        <el-table-column type="expand">
+          <template slot-scope="scope">
+            <p>{{ scope.row.description }}</p>
+          </template>
+        </el-table-column>
         <el-table-column
         label=""
         width="40">
@@ -228,7 +233,7 @@ export default {
           allowedids[data.selected[i]] = {}
         }
         files.UpdateFile(id, {
-          "allowedids": allowedids
+          'allowedids': allowedids
         })
         .then(response => {
           this.handleSucc('Saved')
@@ -247,7 +252,7 @@ export default {
       const id = data.id
       if (id) {
         files.UpdateFile(id, {
-          "description": data.description
+          'description': data.description
         })
         .then(response => {
           this.handleSucc('Saved')
