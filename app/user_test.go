@@ -52,7 +52,7 @@ func Test_UserReadByEmailAndCheckPassword(t *testing.T) {
 	}
 }
 func Test_UserUpdate(t *testing.T) {
-	user, err := tUserData.store.Update(tUserData.id.Hex(), NewUpdates().Password(tUserData.newSecret))
+	user, err := tUserData.store.Update(tUserData.id.Hex(), NewUserUpdates().Password(tUserData.newSecret))
 	if err != nil {
 		t.Error(err)
 		return

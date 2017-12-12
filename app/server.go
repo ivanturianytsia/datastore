@@ -12,7 +12,8 @@ import (
 type Server struct {
 	auth         AuthService
 	user         UserStore
-	code         CodeAuthService
+	smscode      CodeAuthService
+	emailcode    CodeAuthService
 	passwordless PasswordlessRequestStore
 	files        FileStore
 	index        []byte
@@ -36,7 +37,8 @@ func NewServer() (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	code := NewMailgunService()
+	emailcode := NewMailgunService()
+	smscode := NewSMSApiService()
 	index, err := ioutil.ReadFile(path.Join(getDistDir(), "index.html"))
 	if err != nil {
 		return nil, err
@@ -46,7 +48,8 @@ func NewServer() (*Server, error) {
 		user:         user,
 		files:        files,
 		index:        index,
-		code:         code,
+		emailcode:    emailcode,
+		smscode:      smscode,
 		passwordless: passwordless,
 	}, nil
 }

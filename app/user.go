@@ -9,15 +9,16 @@ import (
 )
 
 type User struct {
-	ID        bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
-	Email     string        `bson:"email,omitempty" json:"email,omitempty"`
-	Hash      string        `bson:"hash,omitempty" json:"hash,omitempty"`
-	Roles     []string      `bson:"roles,omitempty" json:"roles,omitempty"`
-	CreatedOn time.Time     `bson:"created,omitempty" json:"created,omitempty"`
-	UpdatedOn time.Time     `bson:"updated,omitempty" json:"updated,omitempty"`
-	Activated bool          `bson:"activated" json:"activated"`
-	TwoFactor bool          `bson:"twofactor" json:"twofactor"`
-	OldHashes []string      `bson:"oldhashes,omitempty" json:"oldhashes,omitempty"`
+	ID          bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
+	Email       string        `bson:"email,omitempty" json:"email,omitempty"`
+	PhoneNumber string        `bson:"phonenumber,omitempty" json:"phonenumber,omitempty"`
+	Hash        string        `bson:"hash,omitempty" json:"hash,omitempty"`
+	Roles       []string      `bson:"roles,omitempty" json:"roles,omitempty"`
+	CreatedOn   time.Time     `bson:"created,omitempty" json:"created,omitempty"`
+	UpdatedOn   time.Time     `bson:"updated,omitempty" json:"updated,omitempty"`
+	Activated   bool          `bson:"activated" json:"activated"`
+	TwoFactor   bool          `bson:"twofactor" json:"twofactor"`
+	OldHashes   []string      `bson:"oldhashes,omitempty" json:"oldhashes,omitempty"`
 }
 
 type UserStore interface {
@@ -170,7 +171,7 @@ func (store *mongoUserStore) CheckPassword(id, password string) error {
 	return store.hasher.Check(password, user.Hash)
 }
 
-func NewUpdates() UserUpdates {
+func NewUserUpdates() UserUpdates {
 	return UserUpdates{}
 }
 
@@ -202,6 +203,12 @@ func (uu UserUpdates) Activated(activated bool) UserUpdates {
 
 func (uu UserUpdates) TwoFactor(twofactor bool) UserUpdates {
 	uu["twofactor"] = twofactor
+
+	return uu
+}
+
+func (uu UserUpdates) PhoneNumber(phonenumber string) UserUpdates {
+	uu["phonenumber"] = phonenumber
 
 	return uu
 }

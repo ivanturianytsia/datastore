@@ -24,7 +24,7 @@ export default {
     register (data) {
       const auth = new Auth(this)
 
-      auth.Register(data.email, data.password)
+      auth.Register(data.email, data.password, data.phonenumber)
         .then(response => {
           if (response.token) {
             this.$router.push('/home')

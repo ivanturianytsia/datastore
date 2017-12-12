@@ -4,17 +4,8 @@ class Auth {
   constructor (ctx) {
     this.ctx = ctx
   }
-  post (url, email, password) {
-    if (email === '') {
-      throw new Error('No email provided')
-    }
-    if (password === '') {
-      throw new Error('No password provided')
-    }
-    return this.ctx.$http.post(url, {
-      email,
-      password
-    }, {
+  post (url, credentials) {
+    return this.ctx.$http.post(url, credentials, {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -27,10 +18,32 @@ class Auth {
     })
   }
   Login (email, password) {
-    return this.post(domain + '/auth/login', email, password)
+    if (email === '') {
+      throw new Error('No email provided')
+    }
+    if (password === '') {
+      throw new Error('No password provided')
+    }
+    return this.post(domain + '/auth/login', {
+      email,
+      password
+    })
   }
-  Register (email, password) {
-    return this.post(domain + '/auth/register', email, password)
+  Register (email, password, phonenumber) {
+    if (email === '') {
+      throw new Error('No email provided')
+    }
+    if (password === '') {
+      throw new Error('No password provided')
+    }
+    if (phonenumber === '') {
+      throw new Error('No phonenumber provided')
+    }
+    return this.post(domain + '/auth/register', {
+      email,
+      password,
+      phonenumber
+    })
   }
   PostEmailCode (email, code) {
     if (email === '') {

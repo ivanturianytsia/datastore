@@ -8,7 +8,7 @@ import (
 )
 
 type CodeAuthService interface {
-	SendCode(to, code string) error
+	SendCode(user User, code string) error
 }
 
 type MailgunService struct {
@@ -26,7 +26,8 @@ func NewMailgunService() CodeAuthService {
 	}
 }
 
-func (service *MailgunService) SendCode(to, code string) error {
+func (service *MailgunService) SendCode(user User, code string) error {
+	to := user.Email
 	message := mailgun.NewMessage(
 		"passwordless@mail.nomidigital.com",
 		"AGH Datastore Auth Code",

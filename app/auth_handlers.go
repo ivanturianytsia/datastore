@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 )
 
 type Credentials struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	PhoneNumber string `json:"phonenumber"`
 }
 type PasswordlessBody struct {
 	Email string `json:"email"`
@@ -16,6 +18,8 @@ type PasswordlessBody struct {
 type TokenBody struct {
 	Token string `json:"token"`
 }
+
+var validPhone = regexp.MustCompile(`^\+\d{11}$`)
 
 func (s Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var cred Credentials
@@ -45,9 +49,16 @@ func (s Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			RespondErr(w, r, http.StatusForbidden, err)
 			return
 		}
-		if err := s.code.SendCode(user.Email, request.Code); err != nil {
-			RespondErr(w, r, http.StatusInternalServerError, err)
-			return
+		if user.PhoneNumber != "" {
+			if err := s.smscode.SendCode(user, request.Code); err != nil {
+				RespondErr(w, r, http.StatusInternalServerError, err)
+				return
+			}
+		} else {
+			if err := s.emailcode.SendCode(user, request.Code); err != nil {
+				RespondErr(w, r, http.StatusInternalServerError, err)
+				return
+			}
 		}
 		Respond(w, r, http.StatusOK, map[string]string{"email": user.Email})
 		return
@@ -68,29 +79,40 @@ func (s Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusBadRequest, err)
 		return
 	}
+	// TODO: validate email
 	if cred.Email == "" {
-		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Invalid email"))
+		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Invalid email '%s'", cred.Email))
 		return
 	}
 	if cred.Password == "" {
 		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Invalid password"))
 		return
 	}
+	if cred.PhoneNumber == "" || !validPhone.MatchString(cred.PhoneNumber) {
+		RespondErr(w, r, http.StatusBadRequest, fmt.Errorf("Invalid phone number '%s'", cred.PhoneNumber))
+		return
+	}
+
 	user, err := s.auth.Register(cred.Email, cred.Password)
 	if err != nil {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
-	request, err := s.passwordless.Add(user.ID.Hex())
+	updatedUser, err := s.user.Update(user.ID.Hex(), NewUserUpdates().PhoneNumber(cred.PhoneNumber))
 	if err != nil {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
-	if err := s.code.SendCode(user.Email, request.Code); err != nil {
+	request, err := s.passwordless.Add(updatedUser.ID.Hex())
+	if err != nil {
+		RespondErr(w, r, http.StatusForbidden, err)
+		return
+	}
+	if err := s.smscode.SendCode(updatedUser, request.Code); err != nil {
 		RespondErr(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	Respond(w, r, http.StatusOK, map[string]string{"email": user.Email})
+	Respond(w, r, http.StatusOK, map[string]string{"email": updatedUser.Email})
 }
 
 func (s Server) handleCode(w http.ResponseWriter, r *http.Request) {

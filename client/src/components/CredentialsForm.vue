@@ -6,6 +6,9 @@
     <el-form-item label="Password">
       <el-input v-model="password" type="password" auto-complete="off"></el-input>
     </el-form-item>
+    <el-form-item label="Phone Number" v-if="submitText === 'Register'">
+      <el-input v-model="phonenumber" placeholder="+00000000000" type="phonenumber" auto-complete="off"></el-input>
+    </el-form-item>
     <el-form-item>
       <el-button type="primary" @click="submit">{{submitText}}</el-button>
       <el-button @click="altAction">{{altText}}</el-button>
@@ -20,14 +23,16 @@ export default {
   data () {
     return {
       email: '',
-      password: ''
+      password: '',
+      phonenumber: ''
     }
   },
   methods: {
     submit (event) {
       this.$emit('submit', {
         email: this.email,
-        password: this.password
+        password: this.password,
+        phonenumber: this.phonenumber
       })
     },
     altAction (event) {
