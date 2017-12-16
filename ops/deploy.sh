@@ -12,5 +12,6 @@ docker swarm init --advertise-addr=$(docker-machine ip agh-datastore)
 export MAILGUN_DOMAIN=
 export MAILGUN_KEY=
 export MAILGUN_PUBKEY=
+export SMSAPI_TOKEN=
 
 docker stack deploy --compose-file ./ops/docker-compose.yml agh

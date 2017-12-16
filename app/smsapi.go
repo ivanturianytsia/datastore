@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -26,8 +27,20 @@ func (service *SMSApiService) makeRequest(url string) error {
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", service.token))
-	if _, err := client.Do(req); err != nil {
+	response, err := client.Do(req)
+	if err != nil {
 		return err
+	}
+	var body map[string]interface{}
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		return err
+	}
+	if _, ok := body["error"]; ok {
+		if v, ok := body["message"].(string); ok {
+			return fmt.Errorf(v)
+		} else {
+			return fmt.Errorf("Error while sending SMS with code")
+		}
 	}
 	return nil
 }

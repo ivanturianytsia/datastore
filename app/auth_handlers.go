@@ -51,8 +51,10 @@ func (s Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		if user.PhoneNumber != "" {
 			if err := s.smscode.SendCode(user, request.Code); err != nil {
-				RespondErr(w, r, http.StatusInternalServerError, err)
-				return
+				if err := s.emailcode.SendCode(user, request.Code); err != nil {
+					RespondErr(w, r, http.StatusInternalServerError, err)
+					return
+				}
 			}
 		} else {
 			if err := s.emailcode.SendCode(user, request.Code); err != nil {
