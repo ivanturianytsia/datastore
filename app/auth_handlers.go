@@ -49,18 +49,9 @@ func (s Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			RespondErr(w, r, http.StatusForbidden, err)
 			return
 		}
-		if user.PhoneNumber != "" {
-			if err := s.smscode.SendCode(user, request.Code); err != nil {
-				if err := s.emailcode.SendCode(user, request.Code); err != nil {
-					RespondErr(w, r, http.StatusInternalServerError, err)
-					return
-				}
-			}
-		} else {
-			if err := s.emailcode.SendCode(user, request.Code); err != nil {
-				RespondErr(w, r, http.StatusInternalServerError, err)
-				return
-			}
+		if err := s.emailcode.SendCode(user, request.Code); err != nil {
+			RespondErr(w, r, http.StatusInternalServerError, err)
+			return
 		}
 		Respond(w, r, http.StatusOK, map[string]string{"email": user.Email})
 		return
@@ -110,7 +101,7 @@ func (s Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
-	if err := s.smscode.SendCode(updatedUser, request.Code); err != nil {
+	if err := s.emailcode.SendCode(user, request.Code); err != nil {
 		RespondErr(w, r, http.StatusInternalServerError, err)
 		return
 	}

@@ -54,7 +54,7 @@ jobs:
         command: docker push ${DOCKER_USERNAME}/${APPNAME}:latest
       - type: shell
         name: Build docker image :hash
-        command: docker tag ${APPNAME}:latest ${DOCKER_USERNAME}/${APPNAME}:$CIRCLE_SHA1
+        command: docker tag ${APPNAME}:latest ${DOCKER_USERNAME}/${APPNAME}:$(git rev-parse HEAD)
       - type: shell
         name: Push docker image :hash
-        command: docker push ${DOCKER_USERNAME}/${APPNAME}:$CIRCLE_SHA1
+        command: docker push ${DOCKER_USERNAME}/${APPNAME}:$(git rev-parse HEAD)

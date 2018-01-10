@@ -19,7 +19,7 @@ services:
       - MAILGUN_DOMAIN
       - MAILGUN_KEY
       - MAILGUN_PUBKEY
-      - SMSAPI_TOKEN=
+      - SMSAPI_TOKEN
     ports:
       - "80:3000"
     networks:

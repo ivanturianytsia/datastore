@@ -1,5 +1,5 @@
 export APPNAME="agh-datastore"
-export REGISTRY="104.131.38.166:5000"
+export REGISTRY="ivanturianytsia"
 export HASH=$(git rev-parse HEAD)
 
 # Deploy settings
