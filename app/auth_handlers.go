@@ -101,7 +101,7 @@ func (s Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		RespondErr(w, r, http.StatusForbidden, err)
 		return
 	}
-	if err := s.emailcode.SendCode(user, request.Code); err != nil {
+	if err := s.emailcode.SendCode(updatedUser, request.Code); err != nil {
 		RespondErr(w, r, http.StatusInternalServerError, err)
 		return
 	}

@@ -10,7 +10,12 @@ class Auth {
         'Content-Type': 'application/json'
       }
     }).then(response => {
-      let obj = JSON.parse(response.body)
+      let obj = {}
+      try {
+        obj = JSON.parse(response.body)
+      } catch (err) {
+        obj = response.body
+      }
       if (obj.token) {
         this.token = obj.token
       }
