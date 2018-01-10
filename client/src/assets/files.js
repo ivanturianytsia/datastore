@@ -14,7 +14,13 @@ class Files {
       }
     })
     .then(response => {
-      return JSON.parse(response.body)
+      let obj = {}
+      try {
+        obj = JSON.parse(response.body)
+      } catch (err) {
+        obj = response.body
+      }
+      return obj
     })
   }
   DeleteFile (filename) {
@@ -53,7 +59,13 @@ class Files {
       }
     })
     .then(response => {
-      return JSON.parse(response.body)
+      let obj = {}
+      try {
+        obj = JSON.parse(response.body)
+      } catch (err) {
+        obj = response.body
+      }
+      return obj
     })
   }
   get token () {

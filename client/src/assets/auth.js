@@ -66,9 +66,14 @@ class Auth {
         'Content-Type': 'application/json'
       }
     }).then(response => {
-      let obj = JSON.parse(response.body)
+      let obj = {}
+      try {
+        obj = JSON.parse(response.body)
+      } catch (err) {
+        obj = response.body
+      }
       if (obj.token) {
-        that.token = obj.token
+        this.token = obj.token
       }
       return obj
     })
@@ -83,7 +88,13 @@ class Auth {
       }
     })
     .then(response => {
-      return JSON.parse(response.body)
+      let obj = {}
+      try {
+        obj = JSON.parse(response.body)
+      } catch (err) {
+        obj = response.body
+      }
+      return obj
     })
   }
   PutUser (updates) {
@@ -97,7 +108,13 @@ class Auth {
       }
     })
     .then(response => {
-      return JSON.parse(response.body)
+      let obj = {}
+      try {
+        obj = JSON.parse(response.body)
+      } catch (err) {
+        obj = response.body
+      }
+      return obj
     })
   }
   GetUsersByEmail (email) {
@@ -110,7 +127,13 @@ class Auth {
       }
     })
     .then(response => {
-      return JSON.parse(response.body)
+      let obj = {}
+      try {
+        obj = JSON.parse(response.body)
+      } catch (err) {
+        obj = response.body
+      }
+      return obj
     })
   }
   Logout () {
